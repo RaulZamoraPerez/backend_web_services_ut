@@ -1,0 +1,176 @@
+{
+  "name": "uttecam-api",
+  "version": "2.0.0-secure",
+  "description": "API CRUD para UTTECAM con Sequelize ORM, TypeScript y Seguridad OWASP Top 10 - Versión de Producción",
+  "main": "dist/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "start": "node dist/server.js",
+    "create:admin": "node scripts/auth/create-admin.js",
+    "test:security": "node scripts/test-token-security.js",
+    "db:sync": "node scripts/sync-database.js",
+    "db:sync:force": "node scripts/sync-database.js --force",
+    "migrate:files": "node scripts/migrate-files.js",
+    "health": "curl -f http://localhost:3000/health || exit 1",
+    "db:migrate": "echo 'Run manual SQL migrations from sql/ directory'",
+    "logs:view": "tail -f logs/*.log",
+    "logs:error": "tail -f logs/*error*.log", 
+    "logs:security": "tail -f logs/security*.log",
+    "restart": "pm2 restart uttecam-api || node dist/server.js",
+    "status": "pm2 status uttecam-api || echo 'PM2 not configured'",
+    "stop": "pm2 stop uttecam-api || echo 'Process stopped'"
+  },
+  "keywords": [
+    "express",
+    "api",
+    "uttecam",
+    "university",
+    "production",
+    "secure",
+    "owasp",
+    "rest-api",
+    "jwt",
+    "academic",
+    "constancias",
+    "kardex"
+  ],
+  "author": {
+    "name": "Universidad Tecnológica de Tecamachalco",
+    "email": "soporte@uttecam.edu.mx",
+    "url": "https://uttecam.edu.mx"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lisa2900/BKUTTECAM.git",
+    "directory": "version-estable"
+  },
+  "bugs": {
+    "url": "https://github.com/Lisa2900/BKUTTECAM/issues",
+    "email": "soporte@uttecam.edu.mx"
+  },
+  "homepage": "https://github.com/Lisa2900/BKUTTECAM#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-fileupload": "^1.5.2",
+    "express-rate-limit": "^8.1.0",
+    "express-slow-down": "^3.0.0",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.1",
+    "nodemailer": "^7.0.10",
+    "sequelize": "^6.37.7",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "optionalDependencies": {
+    "pm2": "^5.4.2"
+  },
+  "peerDependencies": {
+    "mysql": ">=2.18.1"
+  },
+  "config": {
+    "production": {
+      "port": 3000,
+      "logLevel": "info",
+      "nodeEnv": "production"
+    }
+  },
+  "files": [
+  "dist/",
+  "scripts/auth/create-admin.js",
+    "scripts/sync-database.js",
+    "scripts/migrate-files.js",
+    "scripts/migrate-home-content.js",
+    "scripts/sync-directorio-organigrama.js",
+    "sql/",
+    "docs/",
+    "README.md",
+    "CHANGELOG.md",
+    ".env.example"
+  ],
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "private"
+  },
+  "funding": {
+    "type": "institutional",
+    "url": "https://uttecam.edu.mx"
+  },
+  "deployment": {
+    "targets": ["cpanel", "vps", "cloud"],
+    "requirements": {
+      "nodeVersion": ">=20.0.0",
+      "mysqlVersion": ">=8.0.0",
+      "memory": ">=512MB",
+      "storage": ">=2GB"
+    },
+    "healthCheck": "/health",
+    "port": 3000,
+    "ssl": "recommended"
+  },
+  "monitoring": {
+    "uptime": "/health",
+    "metrics": "/health",
+    "logs": "logs/",
+    "errorReporting": "logs/security-error-*.log"
+  },
+  "performance": {
+    "maxMemory": "512MB",
+    "clustering": "auto",
+    "cacheStrategy": "memory",
+    "rateLimiting": "enabled"
+  },
+  "security": {
+    "owasp": "top10-2021",
+    "jwt": "HS256",
+    "bcrypt": "12-rounds",
+    "rateLimiting": "multilayer",
+    "headers": "helmet",
+    "cors": "restricted",
+    "validation": "express-validator",
+    "logging": "security-events"
+  },
+  "features": {
+    "modules": [
+      "authentication",
+      "textos",
+      "directorios", 
+      "nosotros",
+      "solicitudes-constancia"
+    ],
+    "endpoints": 35,
+    "security": "enterprise-grade",
+    "documentation": "complete"
+  },
+  "compatibility": {
+    "mysql": ">=8.0.0",
+    "postgresql": ">=12.0.0",
+    "mariadb": ">=10.6.0"
+  },
+  "support": {
+    "documentation": "docs/",
+    "examples": "docs/API_REFERENCE.md",
+    "troubleshooting": "docs/DEPLOYMENT.md",
+    "contact": "soporte@uttecam.edu.mx"
+  }
+}

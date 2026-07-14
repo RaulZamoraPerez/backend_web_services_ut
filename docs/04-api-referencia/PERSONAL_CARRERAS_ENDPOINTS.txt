@@ -1,0 +1,376 @@
+================================================================================
+API PERSONAL CARRERAS - DOCUMENTACIÓN DE ENDPOINTS
+================================================================================
+
+Base URL: /api/personal-carreras
+
+================================================================================
+1. CREAR PERSONAL
+================================================================================
+
+Endpoint: POST /api/personal-carreras
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- nombre (string, requerido): Nombre del personal
+- correo (string, requerido): Email del personal
+- carreras (array, requerido): Lista de carreras asignadas (mínimo 1)
+- activo (boolean, opcional): Estado activo/inactivo (default: true)
+
+Ejemplo de Body:
+{
+  "nombre": "María González",
+  "correo": "maria.gonzalez@uttecam.edu.mx",
+  "carreras": ["TSU en Desarrollo de Software", "Ingeniería en Sistemas"],
+  "activo": true
+}
+
+REGLAS DE VALIDACIÓN:
+- nombre: no puede estar vacío, máximo 200 caracteres
+- correo: debe ser un email válido, máximo 200 caracteres, debe ser único
+- carreras: debe ser un array, mínimo 1 elemento, todos deben ser texto válido
+- activo: si se envía, debe ser true o false
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "nombre",
+      "message": "El nombre es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Casos específicos de error 400:
+- Si nombre está vacío: "El nombre es requerido."
+- Si correo está vacío: "El correo es requerido."
+- Si correo no es válido: "El correo debe ser válido."
+- Si carreras está vacío o no es array: "Debe asignar al menos una carrera."
+- Si carreras contiene elementos no válidos: "Todas las carreras deben ser texto válido."
+- Si el correo ya existe: "Ya existe personal con el correo 'email@example.com'."
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al crear el personal."
+}
+
+RESPUESTA EXITOSA (201 Created):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "María González",
+  "correo": "maria.gonzalez@uttecam.edu.mx",
+  "carreras": ["TSU en Desarrollo de Software", "Ingeniería en Sistemas"],
+  "activo": true,
+  "createdAt": "2025-12-06T10:30:00.000Z",
+  "updatedAt": "2025-12-06T10:30:00.000Z"
+}
+
+
+================================================================================
+2. OBTENER TODO EL PERSONAL
+================================================================================
+
+Endpoint: GET /api/personal-carreras
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- No recibe parámetros
+
+REGLAS:
+- Los resultados se ordenan alfabéticamente por nombre
+- Devuelve todos los registros (activos e inactivos)
+
+ERRORES QUE DEVUELVE:
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener el personal."
+}
+
+RESPUESTA EXITOSA (200 OK):
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "nombre": "Ana Martínez",
+    "correo": "ana.martinez@uttecam.edu.mx",
+    "carreras": ["TSU en Energías Renovables"],
+    "activo": true,
+    "createdAt": "2025-12-05T08:00:00.000Z",
+    "updatedAt": "2025-12-05T08:00:00.000Z"
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "nombre": "Juan Pérez",
+    "correo": "juan.perez@uttecam.edu.mx",
+    "carreras": ["TSU en Mecatrónica", "Ingeniería en Mecatrónica"],
+    "activo": false,
+    "createdAt": "2025-12-04T09:00:00.000Z",
+    "updatedAt": "2025-12-06T11:00:00.000Z"
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "nombre": "María González",
+    "correo": "maria.gonzalez@uttecam.edu.mx",
+    "carreras": ["TSU en Desarrollo de Software"],
+    "activo": true,
+    "createdAt": "2025-12-06T10:30:00.000Z",
+    "updatedAt": "2025-12-06T10:30:00.000Z"
+  }
+]
+
+Si no hay registros, devuelve array vacío:
+[]
+
+
+================================================================================
+3. OBTENER PERSONAL POR ID
+================================================================================
+
+Endpoint: GET /api/personal-carreras/:id
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID del personal
+
+Ejemplo de URL:
+GET /api/personal-carreras/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "id",
+      "message": "El ID es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró personal con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener el personal."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "María González",
+  "correo": "maria.gonzalez@uttecam.edu.mx",
+  "carreras": ["TSU en Desarrollo de Software", "Ingeniería en Sistemas"],
+  "activo": true,
+  "createdAt": "2025-12-06T10:30:00.000Z",
+  "updatedAt": "2025-12-06T10:30:00.000Z"
+}
+
+
+================================================================================
+4. ACTUALIZAR PERSONAL
+================================================================================
+
+Endpoint: PUT /api/personal-carreras/:id
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID del personal
+- nombre (string, opcional): Nuevo nombre del personal
+- correo (string, opcional): Nuevo email del personal
+- carreras (array, opcional): Nueva lista de carreras asignadas
+- activo (boolean, opcional): Nuevo estado activo/inactivo
+
+Ejemplo de URL:
+PUT /api/personal-carreras/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+Ejemplo de Body (todos los campos son opcionales):
+{
+  "nombre": "María González López",
+  "correo": "maria.lopez@uttecam.edu.mx",
+  "carreras": ["TSU en Desarrollo de Software", "Ingeniería en Desarrollo de Software", "Licenciatura en Informática"],
+  "activo": false
+}
+
+También puedes actualizar solo un campo:
+{
+  "activo": false
+}
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+- nombre: si se envía, no puede estar vacío, máximo 200 caracteres
+- correo: si se envía, debe ser email válido, máximo 200 caracteres, debe ser único (excepto para el mismo registro)
+- carreras: si se envía, debe ser array con mínimo 1 elemento, todos deben ser texto válido
+- activo: si se envía, debe ser true o false
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "nombre",
+      "message": "El nombre no puede estar vacío.",
+      "value": ""
+    }
+  ]
+}
+
+Casos específicos de error 400:
+- Si id está vacío: "El ID es requerido."
+- Si nombre se envía vacío: "El nombre no puede estar vacío."
+- Si correo no es válido: "El correo debe ser válido."
+- Si correo ya está en uso por otro personal: "El correo 'email@example.com' ya está en uso."
+- Si carreras está vacío: "Debe asignar al menos una carrera."
+- Si carreras contiene elementos no válidos: "Todas las carreras deben ser texto válido."
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró personal con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al actualizar el personal."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "María González López",
+  "correo": "maria.lopez@uttecam.edu.mx",
+  "carreras": ["TSU en Desarrollo de Software", "Ingeniería en Desarrollo de Software", "Licenciatura en Informática"],
+  "activo": false,
+  "createdAt": "2025-12-06T10:30:00.000Z",
+  "updatedAt": "2025-12-06T14:45:00.000Z"
+}
+
+
+================================================================================
+5. ELIMINAR PERSONAL
+================================================================================
+
+Endpoint: DELETE /api/personal-carreras/:id
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID del personal
+
+Ejemplo de URL:
+DELETE /api/personal-carreras/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+
+NOTA IMPORTANTE:
+- Esta operación ELIMINA permanentemente el registro de la base de datos
+- Si solo quieres desactivar al personal, usa PUT con activo: false
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "id",
+      "message": "El ID es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró personal con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al eliminar el personal."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "message": "Personal eliminado exitosamente."
+}
+
+
+================================================================================
+NOTAS GENERALES
+================================================================================
+
+AUTENTICACIÓN:
+Las rutas protegidas requieren un token JWT en el header:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+FORMATO DE FECHAS:
+Todas las fechas se devuelven en formato ISO 8601 (UTC):
+"2025-12-06T10:30:00.000Z"
+
+CAMPO CARRERAS:
+- Se almacena como JSON en la base de datos
+- Permite flexibilidad en las carreras asignadas
+- Ejemplos válidos:
+  * ["TSU en Desarrollo de Software"]
+  * ["TSU en Mecatrónica", "Ingeniería en Mecatrónica"]
+  * ["TSU en Energías Renovables", "Ingeniería en Energías Renovables", "Maestría en Energías"]
+
+CORREO ÚNICO:
+- No puede haber dos registros con el mismo correo
+- Al actualizar, el sistema verifica que el nuevo correo no esté en uso por otro personal
+- El mismo registro puede mantener su correo al actualizarlo
+
+ESTADO ACTIVO:
+- true: Personal activo y disponible
+- false: Personal inactivo (no se elimina, solo se oculta)
+- Útil para mantener historial sin eliminar datos
+
+ORDENAMIENTO:
+- GET /api/personal-carreras devuelve resultados ordenados alfabéticamente por nombre
+- Facilita la presentación en interfaces de usuario
+
+================================================================================

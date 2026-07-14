@@ -1,0 +1,518 @@
+================================================================================
+API CARRERAS SIMPLES - DOCUMENTACIÓN DE ENDPOINTS
+================================================================================
+
+Base URL: /api/carreras-simples
+
+================================================================================
+1. CREAR CARRERA
+================================================================================
+
+Endpoint: POST /api/carreras-simples
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- nombre (string, requerido): Nombre completo de la carrera
+- tipo (string, requerido): Tipo de carrera
+- activo (boolean, opcional): Estado activo/inactivo (default: true)
+
+TIPOS VÁLIDOS:
+- TSU
+- INGENIERIA
+- LICENCIATURA
+- MAESTRIA
+- DOCTORADO
+- OTRO
+
+Ejemplo de Body:
+{
+  "nombre": "TSU en Inteligencia Artificial",
+  "tipo": "TSU",
+  "activo": true
+}
+
+REGLAS DE VALIDACIÓN:
+- nombre: no puede estar vacío, máximo 200 caracteres, debe ser único
+- tipo: debe ser TSU, INGENIERIA, LICENCIATURA, MAESTRIA, DOCTORADO u OTRO
+- activo: si se envía, debe ser true o false
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "nombre",
+      "message": "El nombre de la carrera es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Casos específicos de error 400:
+- Si nombre está vacío: "El nombre de la carrera es requerido."
+- Si nombre excede 200 caracteres: "El nombre no puede exceder 200 caracteres."
+- Si tipo no es válido: "El tipo debe ser: TSU, INGENIERIA, LICENCIATURA, MAESTRIA, DOCTORADO u OTRO."
+- Si nombre ya existe: "Ya existe una carrera con el nombre 'TSU en Inteligencia Artificial'."
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al crear la carrera."
+}
+
+RESPUESTA EXITOSA (201 Created):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "TSU en Inteligencia Artificial",
+  "tipo": "TSU",
+  "activo": true,
+  "createdAt": "2025-12-06T10:30:00.000Z",
+  "updatedAt": "2025-12-06T10:30:00.000Z"
+}
+
+
+================================================================================
+2. OBTENER TODAS LAS CARRERAS
+================================================================================
+
+Endpoint: GET /api/carreras-simples
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- activas (query param, opcional): Filtrar solo carreras activas
+
+Ejemplos de URL:
+GET /api/carreras-simples
+GET /api/carreras-simples?activas=true
+GET /api/carreras-simples?activas=false
+
+REGLAS:
+- Sin parámetros: devuelve todas las carreras
+- ?activas=true: solo carreras activas
+- ?activas=false: todas las carreras
+- Ordenado por tipo y nombre alfabéticamente
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "activas",
+      "message": "El parámetro activas debe ser 'true' o 'false'.",
+      "value": "invalid"
+    }
+  ]
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener las carreras."
+}
+
+RESPUESTA EXITOSA (200 OK):
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "nombre": "TSU en Desarrollo de Software",
+    "tipo": "TSU",
+    "activo": true,
+    "createdAt": "2025-12-05T08:00:00.000Z",
+    "updatedAt": "2025-12-05T08:00:00.000Z"
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "nombre": "TSU en Mecatrónica",
+    "tipo": "TSU",
+    "activo": true,
+    "createdAt": "2025-12-05T08:00:00.000Z",
+    "updatedAt": "2025-12-05T08:00:00.000Z"
+  }
+]
+
+Si no hay registros:
+[]
+
+
+================================================================================
+3. OBTENER CARRERAS AGRUPADAS POR TIPO
+================================================================================
+
+Endpoint: GET /api/carreras-simples/grouped
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- activas (query param, opcional): Filtrar solo carreras activas
+
+Ejemplos de URL:
+GET /api/carreras-simples/grouped
+GET /api/carreras-simples/grouped?activas=true
+
+REGLAS:
+- Devuelve objeto con claves = tipos, valores = arrays de carreras
+- Útil para mostrar carreras organizadas por categorías
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "activas",
+      "message": "El parámetro activas debe ser 'true' o 'false'.",
+      "value": "yes"
+    }
+  ]
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener las carreras agrupadas."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "TSU": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "nombre": "TSU en Desarrollo de Software",
+      "activo": true
+    },
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "nombre": "TSU en Mecatrónica",
+      "activo": true
+    }
+  ],
+  "INGENIERIA": [
+    {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "nombre": "Ingeniería en Desarrollo de Software",
+      "activo": true
+    }
+  ]
+}
+
+Si no hay carreras:
+{}
+
+
+================================================================================
+4. OBTENER SOLO NOMBRES DE CARRERAS
+================================================================================
+
+Endpoint: GET /api/carreras-simples/nombres
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- activas (query param, opcional): Filtrar solo carreras activas (default: true)
+
+Ejemplos de URL:
+GET /api/carreras-simples/nombres
+GET /api/carreras-simples/nombres?activas=true
+GET /api/carreras-simples/nombres?activas=false
+
+REGLAS:
+- Por defecto devuelve solo carreras activas
+- Útil para selectores/dropdowns en formularios
+- Devuelve array de strings (solo nombres)
+- Ordenado por tipo y nombre
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "activas",
+      "message": "El parámetro activas debe ser 'true' o 'false'.",
+      "value": "1"
+    }
+  ]
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener los nombres de carreras."
+}
+
+RESPUESTA EXITOSA (200 OK):
+[
+  "TSU en Desarrollo de Software",
+  "TSU en Energías Renovables",
+  "TSU en Mecatrónica",
+  "TSU en Procesos Industriales",
+  "TSU en Tecnologías de la Información",
+  "Ingeniería en Desarrollo de Software",
+  "Ingeniería en Energías Renovables",
+  "Ingeniería en Mecatrónica",
+  "Ingeniería en Procesos Industriales",
+  "Ingeniería en Tecnologías de la Información"
+]
+
+Si no hay carreras:
+[]
+
+
+================================================================================
+5. OBTENER CARRERA POR ID
+================================================================================
+
+Endpoint: GET /api/carreras-simples/:id
+Autenticación: NO REQUERIDA (pública)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID de la carrera
+
+Ejemplo de URL:
+GET /api/carreras-simples/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "id",
+      "message": "El ID es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró la carrera con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al obtener la carrera."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "TSU en Desarrollo de Software",
+  "tipo": "TSU",
+  "activo": true,
+  "createdAt": "2025-12-05T08:00:00.000Z",
+  "updatedAt": "2025-12-05T08:00:00.000Z"
+}
+
+
+================================================================================
+6. ACTUALIZAR CARRERA
+================================================================================
+
+Endpoint: PUT /api/carreras-simples/:id
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID de la carrera
+- nombre (string, opcional): Nuevo nombre de la carrera
+- tipo (string, opcional): Nuevo tipo de carrera
+- activo (boolean, opcional): Nuevo estado
+
+Ejemplo de URL:
+PUT /api/carreras-simples/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+Ejemplo de Body (todos los campos son opcionales):
+{
+  "nombre": "TSU en Inteligencia Artificial",
+  "tipo": "TSU",
+  "activo": true
+}
+
+También puedes actualizar solo un campo:
+{
+  "activo": false
+}
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+- nombre: si se envía, no puede estar vacío, máximo 200 caracteres, debe ser único
+- tipo: si se envía, debe ser TSU, INGENIERIA, LICENCIATURA, MAESTRIA, DOCTORADO u OTRO
+- activo: si se envía, debe ser booleano
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "nombre",
+      "message": "El nombre no puede estar vacío.",
+      "value": ""
+    }
+  ]
+}
+
+Casos específicos de error 400:
+- Si id está vacío: "El ID es requerido."
+- Si nombre se envía vacío: "El nombre no puede estar vacío."
+- Si nombre excede 200 caracteres: "El nombre no puede exceder 200 caracteres."
+- Si tipo no es válido: "El tipo debe ser: TSU, INGENIERIA, LICENCIATURA, MAESTRIA, DOCTORADO u OTRO."
+- Si nombre ya está en uso: "El nombre 'TSU en Mecatrónica' ya está en uso por otra carrera."
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró la carrera con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al actualizar la carrera."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nombre": "TSU en Inteligencia Artificial",
+  "tipo": "TSU",
+  "activo": true,
+  "createdAt": "2025-12-05T08:00:00.000Z",
+  "updatedAt": "2025-12-06T14:45:00.000Z"
+}
+
+
+================================================================================
+7. ELIMINAR CARRERA
+================================================================================
+
+Endpoint: DELETE /api/carreras-simples/:id
+Autenticación: REQUERIDA (JWT Token en header Authorization: Bearer <token>)
+
+QUÉ RECIBE:
+- id (parámetro de URL, requerido): UUID de la carrera
+
+Ejemplo de URL:
+DELETE /api/carreras-simples/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+REGLAS DE VALIDACIÓN:
+- id: no puede estar vacío
+
+NOTA IMPORTANTE:
+- Esta operación ELIMINA permanentemente el registro de la base de datos
+- Si solo quieres desactivar la carrera, usa PUT con activo: false
+
+ERRORES QUE DEVUELVE:
+
+Error 400 - Bad Request (validación):
+{
+  "error": "Error de validación",
+  "message": "Los datos enviados no son válidos",
+  "details": [
+    {
+      "field": "id",
+      "message": "El ID es requerido.",
+      "value": ""
+    }
+  ]
+}
+
+Error 401 - Unauthorized (sin token o token inválido):
+{
+  "error": "Unauthorized",
+  "message": "Token no válido o no proporcionado"
+}
+
+Error 404 - Not Found:
+{
+  "error": "Not Found",
+  "message": "No se encontró la carrera con ID: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+Error 500 - Internal Server Error:
+{
+  "error": "Internal Server Error",
+  "message": "Error al eliminar la carrera."
+}
+
+RESPUESTA EXITOSA (200 OK):
+{
+  "message": "Carrera eliminada exitosamente."
+}
+
+
+================================================================================
+NOTAS GENERALES
+================================================================================
+
+AUTENTICACIÓN:
+Las rutas protegidas requieren un token JWT en el header:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+FORMATO DE FECHAS:
+Todas las fechas se devuelven en formato ISO 8601 (UTC):
+"2025-12-06T10:30:00.000Z"
+
+TIPOS DE CARRERA:
+Valores permitidos para el campo "tipo":
+- TSU: Técnico Superior Universitario
+- INGENIERIA: Ingenierías
+- LICENCIATURA: Licenciaturas
+- MAESTRIA: Maestrías
+- DOCTORADO: Doctorados
+- OTRO: Cualquier otro tipo de programa
+
+NOMBRE ÚNICO:
+- No puede haber dos carreras con el mismo nombre
+- Al actualizar, el sistema verifica que el nuevo nombre no esté en uso
+- La misma carrera puede mantener su nombre al actualizarla
+
+ESTADO ACTIVO:
+- true: Carrera disponible para selección
+- false: Carrera no disponible (no se elimina, solo se oculta)
+- Útil para mantener historial de carreras descontinuadas
+
+ORDENAMIENTO:
+- GET /api/carreras-simples devuelve resultados ordenados por tipo y luego por nombre
+- Orden de tipos: TSU, INGENIERIA, LICENCIATURA, MAESTRIA, DOCTORADO, OTRO
+
+QUERY PARAM "activas":
+En GET /:
+- No especificado: devuelve todas las carreras
+- ?activas=true: solo carreras activas
+- ?activas=false: todas las carreras
+
+En GET /nombres:
+- No especificado: devuelve solo carreras activas (default: true)
+- ?activas=true: solo carreras activas
+- ?activas=false: todas las carreras
+

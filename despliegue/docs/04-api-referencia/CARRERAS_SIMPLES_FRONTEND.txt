@@ -1,0 +1,542 @@
+================================================================================
+INTEGRACIÓN FRONTEND - CARRERAS SIMPLES
+================================================================================
+
+ANTES (Array estático en código):
+================================================================================
+
+const CARRERAS_DISPONIBLES = [
+  'TSU en Desarrollo de Software',
+  'TSU en Mecatrónica',
+  'TSU en Energías Renovables',
+  'TSU en Procesos Industriales',
+  'TSU en Tecnologías de la Información',
+  'Ingeniería en Desarrollo de Software',
+  'Ingeniería en Mecatrónica',
+  'Ingeniería en Energías Renovables',
+  'Ingeniería en Procesos Industriales',
+  'Ingeniería en Tecnologías de la Información',
+];
+
+
+AHORA (API dinámica):
+================================================================================
+
+// 1. OBTENER CARRERAS PARA MOSTRAR EN SELECTOR/CHECKBOXES
+// =========================================================
+
+async function obtenerCarreras() {
+  try {
+    const response = await fetch('/api/carreras-simples/nombres?activas=true');
+    const carreras = await response.json();
+    
+    // carreras = ["TSU en Desarrollo de Software", "TSU en Mecatrónica", ...]
+    return carreras;
+  } catch (error) {
+    console.error('Error al obtener carreras:', error);
+    return [];
+  }
+}
+
+// Uso en el componente:
+const carreras = await obtenerCarreras();
+carreras.forEach(carrera => {
+  // Generar checkbox para cada carrera
+  console.log(carrera); // "TSU en Desarrollo de Software"
+});
+
+
+// 2. OBTENER CARRERAS AGRUPADAS POR TIPO (Para UI organizada)
+// ============================================================
+
+async function obtenerCarrerasAgrupadas() {
+  try {
+    const response = await fetch('/api/carreras-simples/grouped?activas=true');
+    const grouped = await response.json();
+    
+    // grouped = {
+    //   "TSU": [
+    //     { "id": "uuid-1", "nombre": "TSU en Desarrollo de Software", "activo": true },
+    //     { "id": "uuid-2", "nombre": "TSU en Mecatrónica", "activo": true }
+    //   ],
+    //   "INGENIERIA": [
+    //     { "id": "uuid-3", "nombre": "Ingeniería en Desarrollo de Software", "activo": true }
+    //   ]
+    // }
+    
+    return grouped;
+  } catch (error) {
+    console.error('Error al obtener carreras agrupadas:', error);
+    return {};
+  }
+}
+
+// Uso en el componente:
+const grouped = await obtenerCarrerasAgrupadas();
+
+// Renderizar por categorías:
+Object.entries(grouped).forEach(([tipo, carreras]) => {
+  console.log(`\n${tipo}:`);
+  carreras.forEach(carrera => {
+    console.log(`  - ${carrera.nombre}`);
+  });
+});
+
+
+// 3. DASHBOARD - AGREGAR NUEVA CARRERA
+// =====================================
+
+async function agregarCarrera(nombre, tipo) {
+  try {
+    const token = localStorage.getItem('token'); // O donde guardes el JWT
+    
+    const response = await fetch('/api/carreras-simples', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nombre: nombre,
+        tipo: tipo,
+        activo: true
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    const nuevaCarrera = await response.json();
+    console.log('Carrera creada:', nuevaCarrera);
+    return nuevaCarrera;
+    
+  } catch (error) {
+    console.error('Error al agregar carrera:', error);
+    alert('Error: ' + error.message);
+  }
+}
+
+// Ejemplo de uso:
+agregarCarrera('TSU en Ciberseguridad', 'TSU');
+
+
+// 4. DASHBOARD - EDITAR CARRERA
+// ==============================
+
+async function editarCarrera(id, cambios) {
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`/api/carreras-simples/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(cambios)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    const carreraActualizada = await response.json();
+    console.log('Carrera actualizada:', carreraActualizada);
+    return carreraActualizada;
+    
+  } catch (error) {
+    console.error('Error al editar carrera:', error);
+    alert('Error: ' + error.message);
+  }
+}
+
+// Ejemplos de uso:
+editarCarrera('uuid-123', { nombre: 'TSU en Inteligencia Artificial' });
+editarCarrera('uuid-123', { activo: false }); // Desactivar
+editarCarrera('uuid-123', { tipo: 'INGENIERIA' }); // Cambiar tipo
+
+
+// 5. DASHBOARD - ELIMINAR CARRERA
+// ================================
+
+async function eliminarCarrera(id) {
+  try {
+    const confirmacion = confirm('¿Estás seguro de eliminar esta carrera? Esta acción no se puede deshacer.');
+    if (!confirmacion) return;
+    
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`/api/carreras-simples/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    const resultado = await response.json();
+    console.log(resultado.message); // "Carrera eliminada exitosamente."
+    return resultado;
+    
+  } catch (error) {
+    console.error('Error al eliminar carrera:', error);
+    alert('Error: ' + error.message);
+  }
+}
+
+// Ejemplo de uso:
+eliminarCarrera('uuid-123');
+
+
+// 6. DASHBOARD - LISTAR TODAS LAS CARRERAS (con detalles completos)
+// ==================================================================
+
+async function listarTodasLasCarreras() {
+  try {
+    const response = await fetch('/api/carreras-simples');
+    const carreras = await response.json();
+    
+    // carreras = [
+    //   {
+    //     "id": "uuid-1",
+    //     "nombre": "TSU en Desarrollo de Software",
+    //     "tipo": "TSU",
+    //     "activo": true,
+    //     "createdAt": "2025-12-05T08:00:00.000Z",
+    //     "updatedAt": "2025-12-05T08:00:00.000Z"
+    //   },
+    //   ...
+    // ]
+    
+    return carreras;
+  } catch (error) {
+    console.error('Error al listar carreras:', error);
+    return [];
+  }
+}
+
+
+// 7. COMPONENTE REACT COMPLETO - EJEMPLO
+// =======================================
+
+import React, { useState, useEffect } from 'react';
+
+function GestionCarreras() {
+  const [carreras, setCarreras] = useState([]);
+  const [nuevaCarrera, setNuevaCarrera] = useState({ nombre: '', tipo: 'TSU' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarCarreras();
+  }, []);
+
+  async function cargarCarreras() {
+    try {
+      const response = await fetch('/api/carreras-simples');
+      const data = await response.json();
+      setCarreras(data);
+    } catch (error) {
+      console.error('Error al cargar carreras:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAgregar(e) {
+    e.preventDefault();
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/carreras-simples', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(nuevaCarrera)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert('Error: ' + error.message);
+        return;
+      }
+
+      const carreraCreada = await response.json();
+      setCarreras([...carreras, carreraCreada]);
+      setNuevaCarrera({ nombre: '', tipo: 'TSU' });
+      alert('Carrera agregada exitosamente');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al agregar carrera');
+    }
+  }
+
+  async function handleEliminar(id) {
+    if (!confirm('¿Eliminar esta carrera?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/carreras-simples/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert('Error: ' + error.message);
+        return;
+      }
+
+      setCarreras(carreras.filter(c => c.id !== id));
+      alert('Carrera eliminada exitosamente');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar carrera');
+    }
+  }
+
+  async function handleToggleActivo(carrera) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/carreras-simples/${carrera.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ activo: !carrera.activo })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert('Error: ' + error.message);
+        return;
+      }
+
+      const carreraActualizada = await response.json();
+      setCarreras(carreras.map(c => c.id === carrera.id ? carreraActualizada : c));
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al actualizar carrera');
+    }
+  }
+
+  if (loading) return <div>Cargando...</div>;
+
+  return (
+    <div>
+      <h1>Gestión de Carreras</h1>
+
+      {/* Formulario para agregar */}
+      <form onSubmit={handleAgregar}>
+        <input
+          type="text"
+          placeholder="Nombre de la carrera"
+          value={nuevaCarrera.nombre}
+          onChange={(e) => setNuevaCarrera({ ...nuevaCarrera, nombre: e.target.value })}
+          required
+        />
+        
+        <select
+          value={nuevaCarrera.tipo}
+          onChange={(e) => setNuevaCarrera({ ...nuevaCarrera, tipo: e.target.value })}
+        >
+          <option value="TSU">TSU</option>
+          <option value="INGENIERIA">Ingeniería</option>
+          <option value="LICENCIATURA">Licenciatura</option>
+          <option value="MAESTRIA">Maestría</option>
+          <option value="DOCTORADO">Doctorado</option>
+          <option value="OTRO">Otro</option>
+        </select>
+        
+        <button type="submit">Agregar Carrera</button>
+      </form>
+
+      {/* Lista de carreras */}
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {carreras.map(carrera => (
+            <tr key={carrera.id}>
+              <td>{carrera.nombre}</td>
+              <td>{carrera.tipo}</td>
+              <td>
+                <button onClick={() => handleToggleActivo(carrera)}>
+                  {carrera.activo ? '✅ Activa' : '❌ Inactiva'}
+                </button>
+              </td>
+              <td>
+                <button onClick={() => handleEliminar(carrera.id)}>
+                  🗑️ Eliminar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default GestionCarreras;
+
+
+// 8. SELECTOR DE CARRERAS EN FORMULARIO PÚBLICO
+// ==============================================
+
+function FormularioEstudiante() {
+  const [carreras, setCarreras] = useState([]);
+  const [carrerasSeleccionadas, setCarrerasSeleccionadas] = useState([]);
+
+  useEffect(() => {
+    async function cargarCarreras() {
+      try {
+        const response = await fetch('/api/carreras-simples/nombres?activas=true');
+        const data = await response.json();
+        setCarreras(data);
+      } catch (error) {
+        console.error('Error al cargar carreras:', error);
+      }
+    }
+    cargarCarreras();
+  }, []);
+
+  function handleCheckboxChange(carrera) {
+    if (carrerasSeleccionadas.includes(carrera)) {
+      setCarrerasSeleccionadas(carrerasSeleccionadas.filter(c => c !== carrera));
+    } else {
+      setCarrerasSeleccionadas([...carrerasSeleccionadas, carrera]);
+    }
+  }
+
+  return (
+    <div>
+      <h2>Carreras de interés</h2>
+      <p>Seleccione al menos una carrera:</p>
+      
+      {carreras.map(carrera => (
+        <label key={carrera}>
+          <input
+            type="checkbox"
+            checked={carrerasSeleccionadas.includes(carrera)}
+            onChange={() => handleCheckboxChange(carrera)}
+          />
+          {carrera}
+        </label>
+      ))}
+
+      <p>Seleccionadas: {carrerasSeleccionadas.length}</p>
+    </div>
+  );
+}
+
+
+// 9. VANILLA JS - SIN REACT
+// ==========================
+
+// HTML:
+// <div id="carreras-container"></div>
+// <input type="text" id="nueva-carrera" placeholder="Nombre de la carrera">
+// <select id="tipo-carrera">
+//   <option value="TSU">TSU</option>
+//   <option value="INGENIERIA">Ingeniería</option>
+// </select>
+// <button onclick="agregarCarrera()">Agregar</button>
+
+async function cargarCarrerasVanilla() {
+  try {
+    const response = await fetch('/api/carreras-simples');
+    const carreras = await response.json();
+    
+    const container = document.getElementById('carreras-container');
+    container.innerHTML = '';
+    
+    carreras.forEach(carrera => {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <span>${carrera.nombre} (${carrera.tipo})</span>
+        <button onclick="eliminarCarrera('${carrera.id}')">Eliminar</button>
+        <button onclick="toggleActivo('${carrera.id}', ${!carrera.activo})">
+          ${carrera.activo ? 'Desactivar' : 'Activar'}
+        </button>
+      `;
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+async function agregarCarrera() {
+  const nombre = document.getElementById('nueva-carrera').value;
+  const tipo = document.getElementById('tipo-carrera').value;
+  const token = localStorage.getItem('token');
+  
+  try {
+    const response = await fetch('/api/carreras-simples', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ nombre, tipo, activo: true })
+    });
+    
+    if (response.ok) {
+      document.getElementById('nueva-carrera').value = '';
+      cargarCarrerasVanilla();
+      alert('Carrera agregada');
+    } else {
+      const error = await response.json();
+      alert('Error: ' + error.message);
+    }
+  } catch (error) {
+    alert('Error al agregar carrera');
+  }
+}
+
+// Cargar al iniciar la página
+window.onload = cargarCarrerasVanilla;
+
+
+================================================================================
+RESUMEN DE ENDPOINTS MÁS USADOS
+================================================================================
+
+Frontend Público (Formularios):
+  GET /api/carreras-simples/nombres?activas=true
+  → Obtener lista de nombres para selectores
+
+Dashboard Admin:
+  GET /api/carreras-simples
+  → Listar todas las carreras con detalles
+  
+  POST /api/carreras-simples
+  → Crear nueva carrera
+  
+  PUT /api/carreras-simples/:id
+  → Editar carrera (nombre, tipo o activo)
+  
+  DELETE /api/carreras-simples/:id
+  → Eliminar carrera
+
+UI Organizada por Categorías:
+  GET /api/carreras-simples/grouped?activas=true
+  → Obtener carreras agrupadas por tipo (TSU, INGENIERIA, etc.)
+
+================================================================================

@@ -1,0 +1,38 @@
+{
+  "name": "uttecam-api",
+  "script": "dist/server.js",
+  "instances": "max",
+  "exec_mode": "cluster",
+  "watch": false,
+  "max_memory_restart": "512M",
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": 3000
+  },
+  "env_production": {
+    "NODE_ENV": "production",
+    "PORT": 3000
+  },
+  "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+  "log_file": "logs/pm2-combined.log",
+  "out_file": "logs/pm2-out.log",
+  "error_file": "logs/pm2-error.log",
+  "merge_logs": true,
+  "log_type": "json",
+  "max_restarts": 10,
+  "min_uptime": "10s",
+  "restart_delay": 4000,
+  "autorestart": true,
+  "cron_restart": "0 2 * * *",
+  "source_map_support": false,
+  "instance_var": "INSTANCE_ID",
+  "pmx": true,
+  "automation": false,
+  "treekill": true,
+  "kill_timeout": 5000,
+  "listen_timeout": 3000,
+  "shutdown_with_message": true,
+  "wait_ready": true,
+  "health_check_grace_period": 3000,
+  "health_check_fatal_exceptions": true
+}
