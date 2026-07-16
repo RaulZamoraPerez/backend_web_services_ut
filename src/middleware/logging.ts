@@ -198,39 +198,40 @@ export const logFileUpload = (req: Request, res: Response, next: NextFunction) =
 
 // Middleware para detectar patrones de ataque
 export const detectAttackPatterns = (req: Request, res: Response, next: NextFunction) => {
+  // Rutas de autenticación: solo escanear URL y query, nunca el body
+  // para evitar falsos positivos con contraseñas/emails complejos
+  const isAuthRoute = req.originalUrl.includes('/auth/');
+
   const suspiciousPatterns = [
     /<script/i,
     /javascript:/i,
     /vbscript:/i,
     /onload=/i,
     /onerror=/i,
-    /union.*select/i,
-    /drop.*table/i,
-    /insert.*into/i,
-    /update.*set/i,
-    /delete.*from/i,
-    /'.*or.*'.*='/i,
+    /union[\s+]select/i,       // Más preciso: requiere espacio o + entre union y select
+    /drop[\s+]table/i,
+    /insert[\s+]into/i,
     /\.\.\//i,
     /%2e%2e%2f/i,
     /etc\/passwd/i,
     /windows\/system32/i
   ];
-  
-  const requestData = JSON.stringify({
-    url: req.originalUrl,
-    query: req.query,
-    body: req.body,
-    headers: req.headers
-  });
-  
-  const detectedPatterns = suspiciousPatterns.filter(pattern => 
+
+  // Para rutas de auth: solo escanear URL. Para el resto: URL + body
+  const requestData = JSON.stringify(
+    isAuthRoute
+      ? { url: req.originalUrl, query: req.query }
+      : { url: req.originalUrl, query: req.query, body: req.body }
+  );
+
+  const detectedPatterns = suspiciousPatterns.filter(pattern =>
     pattern.test(requestData)
   );
-  
+
   if (detectedPatterns.length > 0) {
     const ip = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
-    
+
     logSecurityEvent(
       'Potential Attack Detected',
       'error',
@@ -243,8 +244,8 @@ export const detectAttackPatterns = (req: Request, res: Response, next: NextFunc
         requestData: process.env.NODE_ENV === 'development' ? requestData : 'redacted'
       }
     );
-    
-    // En producción, podríamos bloquear la request
+
+    // En producción, bloquear la request
     if (process.env.NODE_ENV === 'production') {
       return res.status(400).json({
         error: 'Request bloqueada',
@@ -252,7 +253,7 @@ export const detectAttackPatterns = (req: Request, res: Response, next: NextFunc
       });
     }
   }
-  
+
   next();
 };
 

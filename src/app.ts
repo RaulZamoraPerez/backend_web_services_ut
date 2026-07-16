@@ -110,6 +110,8 @@ app.use(speedLimiter);
 const corsOptions = {
   origin: process.env.CORS_ORIGIN?.split(',') || [
     'http://localhost:3000',
+    'https://estudiantes.uttecam.edu.mx',
+    'https://dashboard.uttecam.edu.mx',
     'http://localhost:3001',
     'http://localhost:5173', // Vite dev server, used by UTTECAM
     'http://localhost:5174',
@@ -117,7 +119,6 @@ const corsOptions = {
     'https://api.uttecam.edu.mx',
     'https://uttecam.edu.mx',
     'https://www.uttecam.edu.mx',
-    'http://localhost:5174',
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'Accept', 'X-Requested-With', 'Cache-Control', 'Pragma'],
