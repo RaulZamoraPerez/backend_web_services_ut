@@ -20,6 +20,19 @@ router.put('/sections/:id', authenticateToken, becasController.updateSection);
 router.delete('/sections/:id', authenticateToken, becasController.deleteSection);
 
 // ============================================
+// CATEGORIES ROUTES
+// ============================================
+
+// Public routes
+router.get('/categories', becasController.getAllCategories);
+router.get('/categories/:id', authenticateToken, becasController.getCategory);
+
+// Protected routes
+router.post('/categories', authenticateToken, becasController.createCategory);
+router.put('/categories/:id', authenticateToken, becasController.updateCategory);
+router.delete('/categories/:id', authenticateToken, becasController.deleteCategory);
+
+// ============================================
 // DOCUMENTS ROUTES (OBSOLETE)
 // ============================================
 

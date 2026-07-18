@@ -3,11 +3,13 @@ import { Op } from 'sequelize';
 import User from '../models/User';
 import { generateToken } from '../middleware/auth';
 import { logSecurityEvent } from '../middleware/logging';
+import crypto from 'crypto';
+import { EmailService } from './email-service';
 
 // Registrar nuevo usuario (solo admins pueden crear usuarios)
 export const register = async (req: Request, res: Response) => {
   try {
-    const { username, email, password, role = 'viewer' } = req.body;
+    const { username, email, password, role = 'normal' } = req.body;
 
     // Validar formato de correo
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,12 +52,17 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
+    // Generar token de confirmación de cuenta
+    const confirmationToken = crypto.randomBytes(32).toString('hex');
+
     // Crear usuario
     const user = await User.create({
       username,
       email,
       password,
-      role
+      role,
+      isConfirmed: false,
+      confirmationToken
     });
 
     logSecurityEvent('User registered successfully', 'info', {
@@ -66,8 +73,50 @@ export const register = async (req: Request, res: Response) => {
       ip: req.ip
     });
 
+    // Enviar email de confirmación
+    try {
+      const emailService = EmailService.forTramites();
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const confirmationLink = `${frontendUrl}/confirmar-cuenta?token=${confirmationToken}`;
+
+      await emailService.sendEmail({
+        to: email,
+        subject: 'UTTECAM - Confirma tu cuenta',
+        htmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="color: #0A9782; margin: 0;">UTTECAM</h2>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">Panel de Administración</p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;" />
+            <h3 style="color: #1e293b; margin-top: 0;">¡Hola ${username}!</h3>
+            <p style="color: #334155; line-height: 1.5; font-size: 16px;">
+              Gracias por registrarte en el Panel de Administración de la UTTECAM. Por favor, confirma tu cuenta haciendo clic en el siguiente enlace:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${confirmationLink}" style="background-color: #fe6a07; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
+                Confirmar Cuenta
+              </a>
+            </div>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5;">
+              Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:
+              <br />
+              <a href="${confirmationLink}" style="color: #0A9782; word-break: break-all;">${confirmationLink}</a>
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+              Este es un correo automático, por favor no respondas a este mensaje.
+            </p>
+          </div>
+        `
+      });
+      console.log(`✉️ Email de confirmación enviado exitosamente a ${email}`);
+    } catch (emailError: any) {
+      console.error('❌ Error al enviar email de confirmación:', emailError.message);
+    }
+
     res.status(201).json({
-      message: 'Usuario registrado exitosamente',
+      message: 'Usuario registrado exitosamente. Por favor verifica tu correo para activar tu cuenta.',
       user: user.toSafeObject()
     });
 
@@ -110,6 +159,21 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Usuario o contraseña incorrectos'
+      });
+    }
+
+    // Verificar si la cuenta está confirmada
+    if (!user.isConfirmed) {
+      logSecurityEvent('Login attempt with unconfirmed email', 'warn', {
+        userId: user.id,
+        username: user.username,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
+      return res.status(401).json({
+        error: 'Cuenta no confirmada',
+        message: 'Por favor confirma tu cuenta mediante el enlace enviado a tu correo electrónico'
       });
     }
 
@@ -406,6 +470,168 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo eliminar el usuario'
+    });
+  }
+};
+
+// Confirmar cuenta de usuario
+export const confirmAccount = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+
+    const user = await User.findOne({
+      where: { confirmationToken: token }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Token inválido',
+        message: 'El token de confirmación es inválido o ya ha sido utilizado'
+      });
+    }
+
+    user.isConfirmed = true;
+    user.confirmationToken = null as any;
+    await user.save();
+
+    logSecurityEvent('User confirmed account successfully', 'info', {
+      userId: user.id,
+      username: user.username,
+      ip: req.ip
+    });
+
+    res.json({
+      message: 'Cuenta confirmada exitosamente. Ya puedes iniciar sesión.'
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo confirmar la cuenta'
+    });
+  }
+};
+
+// Solicitar recuperación de contraseña (Forgot Password)
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({
+      where: { email }
+    });
+
+    if (!user) {
+      // Por seguridad no revelamos si el email existe, pero retornamos un mensaje general
+      return res.json({
+        message: 'Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña.'
+      });
+    }
+
+    // Generar token y expiración (1 hora)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
+    await user.save();
+
+    // Enviar email con link de recuperación
+    try {
+      const emailService = EmailService.forTramites();
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const resetLink = `${frontendUrl}/restablecer-contra?token=${resetToken}`;
+
+      await emailService.sendEmail({
+        to: email,
+        subject: 'UTTECAM - Restablecer Contraseña',
+        htmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="color: #0A9782; margin: 0;">UTTECAM</h2>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">Panel de Administración</p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;" />
+            <h3 style="color: #1e293b; margin-top: 0;">¡Hola ${user.username}!</h3>
+            <p style="color: #334155; line-height: 1.5; font-size: 16px;">
+              Recibimos una solicitud para restablecer la contraseña de tu cuenta. Si tú no realizaste esta solicitud, puedes ignorar este correo.
+            </p>
+            <p style="color: #334155; line-height: 1.5; font-size: 16px;">
+              Para restablecer tu contraseña, haz clic en el siguiente botón (el enlace expira en 1 hora):
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="background-color: #fe6a07; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
+                Restablecer Contraseña
+              </a>
+            </div>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5;">
+              Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:
+              <br />
+              <a href="${resetLink}" style="color: #0A9782; word-break: break-all;">${resetLink}</a>
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+              Este es un correo automático, por favor no respondas a este mensaje.
+            </p>
+          </div>
+        `
+      });
+      console.log(`✉️ Email de recuperación enviado a ${email}`);
+    } catch (emailError: any) {
+      console.error('❌ Error al enviar email de recuperación:', emailError.message);
+    }
+
+    res.json({
+      message: 'Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña.'
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo procesar la solicitud de recuperación'
+    });
+  }
+};
+
+// Restablecer contraseña con el Token
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Token inválido o expirado',
+        message: 'El enlace para restablecer la contraseña es inválido o ha expirado.'
+      });
+    }
+
+    // Guardar nueva contraseña
+    user.password = newPassword;
+    user.resetPasswordToken = null as any;
+    user.resetPasswordExpires = null as any;
+    await user.save();
+
+    logSecurityEvent('User reset password successfully', 'info', {
+      userId: user.id,
+      username: user.username,
+      ip: req.ip
+    });
+
+    res.json({
+      message: 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo restablecer la contraseña'
     });
   }
 };

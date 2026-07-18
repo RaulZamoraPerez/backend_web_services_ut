@@ -5,6 +5,7 @@ interface NoticiaAttributes {
   id?: number;
   titulo: string;
   imagen: string;
+  enlace?: string;
   orden: number;
   activo: boolean;
   fecha_creacion?: Date;
@@ -15,6 +16,7 @@ class Noticia extends Model<NoticiaAttributes> implements NoticiaAttributes {
   public id!: number;
   public titulo!: string;
   public imagen!: string;
+  public enlace!: string;
   public orden!: number;
   public activo!: boolean;
   public fecha_creacion!: Date;
@@ -35,6 +37,11 @@ Noticia.init(
     imagen: {
       type: DataTypes.STRING(500),
       allowNull: false,
+    },
+    enlace: {
+      type: DataTypes.STRING(1000),
+      allowNull: true,
+      defaultValue: null,
     },
     orden: {
       type: DataTypes.INTEGER,

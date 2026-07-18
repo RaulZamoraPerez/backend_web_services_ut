@@ -8,8 +8,12 @@ interface UserAttributes {
   username: string;
   email: string;
   password: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: string;
   isActive: boolean;
+  isConfirmed: boolean;
+  confirmationToken?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   lastLogin?: Date;
   failedLoginAttempts: number;
   lockedUntil?: Date;
@@ -18,7 +22,7 @@ interface UserAttributes {
 }
 
 // Atributos opcionales para creación
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isActive' | 'failedLoginAttempts' | 'lastLogin' | 'lockedUntil' | 'createdAt' | 'updatedAt'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isActive' | 'failedLoginAttempts' | 'lastLogin' | 'lockedUntil' | 'createdAt' | 'updatedAt' | 'isConfirmed' | 'confirmationToken' | 'resetPasswordToken' | 'resetPasswordExpires'> {}
 
 // Definir el modelo
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -26,8 +30,12 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public username!: string;
   public email!: string;
   public password!: string;
-  public role!: 'admin' | 'editor' | 'viewer';
+  public role!: string;
   public isActive!: boolean;
+  public isConfirmed!: boolean;
+  public confirmationToken?: string;
+  public resetPasswordToken?: string;
+  public resetPasswordExpires?: Date;
   public lastLogin?: Date;
   public failedLoginAttempts!: number;
   public lockedUntil?: Date;
@@ -124,13 +132,13 @@ User.init(
       }
     },
     role: {
-      type: DataTypes.ENUM('admin', 'editor', 'viewer'),
+      type: DataTypes.STRING(50),
       allowNull: false,
-      defaultValue: 'viewer',
+      defaultValue: 'normal',
       validate: {
         isIn: {
-          args: [['admin', 'editor', 'viewer']],
-          msg: 'El rol debe ser admin, editor o viewer'
+          args: [['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal']],
+          msg: 'El rol no es válido'
         }
       }
     },
@@ -138,6 +146,23 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true
+    },
+    isConfirmed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    confirmationToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true
     },
     lastLogin: {
       type: DataTypes.DATE,
@@ -179,6 +204,15 @@ User.init(
       },
       {
         fields: ['is_active']
+      },
+      {
+        fields: ['is_confirmed']
+      },
+      {
+        fields: ['confirmation_token']
+      },
+      {
+        fields: ['reset_password_token']
       },
       {
         fields: ['locked_until']

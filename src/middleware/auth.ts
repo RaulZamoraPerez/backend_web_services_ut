@@ -78,7 +78,42 @@ export const requireRole = (roles: string[]) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role.toLowerCase();
+    let isAllowed = false;
+
+    // admin_pro or admin pro has access to everything
+    if (userRole === 'admin_pro' || userRole === 'admin pro') {
+      isAllowed = true;
+    } else {
+      const normalizedRoles = roles.map(r => r.toLowerCase());
+      
+      // Direct match
+      if (normalizedRoles.includes(userRole)) {
+        isAllowed = true;
+      }
+      
+      // Hierarchy matches:
+      // If admin is required, allow normal admin
+      if (normalizedRoles.includes('admin') && userRole === 'admin') {
+        isAllowed = true;
+      }
+      // If editor is required, allow normal admin
+      if (normalizedRoles.includes('editor') && userRole === 'admin') {
+        isAllowed = true;
+      }
+      // If viewer is required, allow normal admin and editor
+      if (normalizedRoles.includes('viewer') && (userRole === 'admin' || userRole === 'editor')) {
+        isAllowed = true;
+      }
+      
+      // Spelling checks for servicios_escolares
+      if ((normalizedRoles.includes('servicios_escolares') || normalizedRoles.includes('servicios escolares')) &&
+          (userRole === 'servicios_escolares' || userRole === 'servicios escolares')) {
+        isAllowed = true;
+      }
+    }
+
+    if (!isAllowed) {
       return res.status(403).json({
         error: 'Permisos insuficientes',
         message: `Se requiere uno de los siguientes roles: ${roles.join(', ')}`,
@@ -132,7 +167,8 @@ export const requireOwnership = (req: Request, res: Response, next: NextFunction
   }
 
   // Los admins pueden acceder a todo
-  if (req.user.role === 'admin') {
+  const userRole = req.user.role.toLowerCase();
+  if (userRole === 'admin' || userRole === 'admin_pro' || userRole === 'admin pro') {
     return next();
   }
 

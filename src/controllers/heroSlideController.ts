@@ -36,7 +36,7 @@ export const createHeroSlide = async (req: Request, res: Response) => {
       archivo_movil: archivo_movil || null,
       orden: 0,
       activo: true,
-      color_fondo: color_fondo || '#0f172a',
+      color_fondo: color_fondo || '#ffffff',
     });
 
     res.status(201).json(slide);

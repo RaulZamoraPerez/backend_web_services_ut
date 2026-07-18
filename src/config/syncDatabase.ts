@@ -24,6 +24,7 @@ import { CarreraSimple } from '../models/CarreraSimple';
 import { OpcionReinscripcion } from '../models/OpcionReinscripcion';
 import { SeccionReinscripcion } from '../models/SeccionReinscripcion';
 import BecaSection from '../models/BecaSection';
+import BecaCategory from '../models/BecaCategory';
 import RelojDigital from '../models/RelojDigital';
 import EstadiaDocumento from '../models/EstadiaDocumento';
 import TipoEstadia from '../models/TipoEstadia';
@@ -124,6 +125,7 @@ import SeminarioCafeBanner from '../models/SeminarioCafeBanner';
 import EgresadosBanner from '../models/EgresadosBanner';
 import EgresadosInfo from '../models/EgresadosInfo';
 import EntidadCertificacionInfo from '../models/EntidadCertificacionInfo';
+import SiteConfig from '../models/SiteConfig';
 
 export const syncDatabase = async (force: boolean = false): Promise<void> => {
   // Probar conexiÃƒÂ³n primero
@@ -158,6 +160,7 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     OpcionReinscripcion,
     SeccionReinscripcion,
     BecaSection,
+    BecaCategory,
     CepimInfo,
     CepimCard,
     CepimInfografia,
@@ -247,6 +250,7 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     CarreraConfig,
     NoticiaConfig,
     SitemapCategory,
+    SiteConfig,
   ];
 
   // Sincronizar modelos con la base de datos
@@ -277,6 +281,16 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
   }
 
   try {
+    // Inicializar BecaCategory por defecto si no existe ninguno
+    const becaCategoryCount = await BecaCategory.count();
+    if (becaCategoryCount === 0) {
+      await BecaCategory.bulkCreate([
+        { name: 'Becas Institucionales', slug: 'uni', icon_url: '/vectores/uttecam%20becas.svg', color: '#189984', order: 1, active: true },
+        { name: 'Becas Benito Juárez', slug: 'gob', icon_url: '/vectores/imagen-removebg-preview-3-vectorized.svg', color: '#e11d48', order: 2, active: true }
+      ]);
+      console.log('🌱 Categorías de becas iniciales creadas con éxito');
+    }
+
     // Inicializar CarreraConfig por defecto si no existe ninguno
     const carreraConfigCount = await CarreraConfig.count();
     if (carreraConfigCount === 0) {

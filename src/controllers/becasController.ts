@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import BecaSection from '../models/BecaSection';
+import BecaCategory from '../models/BecaCategory';
 import { deleteFile } from '../middleware/uploadMiddleware';
 import path from 'path';
 
@@ -196,5 +197,169 @@ export const uploadBannerImage = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error al subir imagen:', error);
         res.status(500).json({ message: 'Error al subir la imagen' });
+    }
+};
+
+// ============================================
+// CATEGORIES CRUD
+// ============================================
+
+// GET /api/becas/categories - Obtener todas las categorías ordenadas
+export const getAllCategories = async (req: Request, res: Response) => {
+    try {
+        const categories = await BecaCategory.findAll({
+            order: [['order', 'ASC']]
+        });
+        res.json(categories);
+    } catch (error) {
+        console.error('Error al obtener categorías de becas:', error);
+        res.status(500).json({ message: 'Error al obtener las categorías de becas' });
+    }
+};
+
+// GET /api/becas/categories/:id - Obtener una categoría específica
+export const getCategory = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const category = await BecaCategory.findByPk(id);
+
+        if (!category) {
+            return res.status(404).json({ message: 'Categoría no encontrada' });
+        }
+
+        res.json(category);
+    } catch (error) {
+        console.error('Error al obtener categoría:', error);
+        res.status(500).json({ message: 'Error al obtener la categoría' });
+    }
+};
+
+// POST /api/becas/categories - Crear nueva categoría
+export const createCategory = async (req: Request, res: Response) => {
+    try {
+        const { name, slug, icon_url, color, order, active } = req.body;
+
+        if (!name || !slug) {
+            return res.status(400).json({ message: 'Nombre y key (slug) son requeridos' });
+        }
+
+        // Validar si slug ya existe
+        const existing = await BecaCategory.findOne({ where: { slug } });
+        if (existing) {
+            return res.status(400).json({ message: 'La key (slug) de la categoría ya existe' });
+        }
+
+        let catOrder = order;
+        if (catOrder === undefined) {
+            const maxOrder = await BecaCategory.max('order') as number | null;
+            catOrder = (maxOrder || 0) + 1;
+        }
+
+        const category = await BecaCategory.create({
+            name,
+            slug,
+            icon_url: icon_url || null,
+            color: color || null,
+            order: catOrder,
+            active: active !== undefined ? active : true
+        });
+
+        res.status(201).json(category);
+    } catch (error) {
+        console.error('Error al crear categoría:', error);
+        res.status(500).json({ message: 'Error al crear la categoría' });
+    }
+};
+
+// PUT /api/becas/categories/:id - Actualizar categoría
+export const updateCategory = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, slug, icon_url, color, order, active } = req.body;
+
+        const category = await BecaCategory.findByPk(id);
+        if (!category) {
+            return res.status(404).json({ message: 'Categoría no encontrada' });
+        }
+
+        // Si se cambia el slug, validar que no esté en uso por otra categoría
+        if (slug && slug !== category.slug) {
+            const existing = await BecaCategory.findOne({ where: { slug } });
+            if (existing) {
+                return res.status(400).json({ message: 'La key (slug) ya está en uso por otra categoría' });
+            }
+
+            // También debemos actualizar todas las secciones existentes de becas que referencien el viejo slug en su data JSON!
+            const sections = await BecaSection.findAll();
+            for (const section of sections) {
+                if (section.data && section.data.category === category.slug) {
+                    const updatedData = { ...section.data, category: slug };
+                    await section.update({ data: updatedData });
+                }
+            }
+        }
+
+        await category.update({
+            ...(name !== undefined && { name }),
+            ...(slug !== undefined && { slug }),
+            ...(icon_url !== undefined && { icon_url }),
+            ...(color !== undefined && { color }),
+            ...(order !== undefined && { order }),
+            ...(active !== undefined && { active })
+        });
+
+        const updatedCategory = await BecaCategory.findByPk(id);
+        res.json(updatedCategory);
+    } catch (error) {
+        console.error('Error al actualizar categoría:', error);
+        res.status(500).json({ message: 'Error al actualizar la categoría' });
+    }
+};
+
+// DELETE /api/becas/categories/:id - Eliminar categoría
+export const deleteCategory = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const category = await BecaCategory.findByPk(id);
+
+        if (!category) {
+            return res.status(404).json({ message: 'Categoría no encontrada' });
+        }
+
+        // Intentar borrar la imagen del logo si no es de los vectores predeterminados
+        if (category.icon_url && typeof category.icon_url === 'string' && category.icon_url.startsWith('/uploads/')) {
+            const relativePath = category.icon_url.replace(/^\/uploads\//, '');
+            if (relativePath) {
+                try {
+                    deleteFile(path.join(path.resolve(__dirname, '../../uploads'), relativePath));
+                } catch (e) {
+                    console.warn('Error deleting category icon file:', e);
+                }
+            }
+        }
+
+        // Eliminar todas las secciones que pertenecen a esta categoría!
+        const sections = await BecaSection.findAll();
+        for (const section of sections) {
+            if (section.data && section.data.category === category.slug) {
+                // Intentar borrar también la imagen física de la sección si tiene
+                const sectionData = section.data as any;
+                if (sectionData && sectionData.bannerUrl && typeof sectionData.bannerUrl === 'string') {
+                    const relativePath = sectionData.bannerUrl.replace(/^\/uploads\//, '');
+                    if (relativePath && !relativePath.startsWith('http')) {
+                        try {
+                            deleteFile(path.join(path.resolve(__dirname, '../../uploads'), relativePath));
+                        } catch (e) {}
+                    }
+                }
+                await section.destroy();
+            }
+        }
+
+        await category.destroy();
+        res.json({ message: 'Categoría y sus secciones eliminadas exitosamente' });
+    } catch (error) {
+        console.error('Error al eliminar categoría:', error);
+        res.status(500).json({ message: 'Error al eliminar la categoría' });
     }
 };

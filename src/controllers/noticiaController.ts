@@ -29,7 +29,7 @@ export const getNoticias = async (req: Request, res: Response) => {
 
 export const createNoticia = async (req: Request, res: Response) => {
   try {
-    const { titulo } = req.body;
+    const { titulo, enlace } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -39,6 +39,7 @@ export const createNoticia = async (req: Request, res: Response) => {
     const noticia = await Noticia.create({
       titulo,
       imagen: file.filename,
+      enlace: enlace || null,
       orden: 0,
       activo: true,
     });
@@ -53,7 +54,7 @@ export const createNoticia = async (req: Request, res: Response) => {
 export const updateNoticia = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { titulo, orden, activo } = req.body;
+    const { titulo, orden, activo, enlace } = req.body;
     const file = req.file;
 
     const noticia = await Noticia.findByPk(id);
@@ -61,7 +62,7 @@ export const updateNoticia = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Noticia no encontrada' });
     }
 
-    const updateData: any = { titulo, orden, activo };
+    const updateData: any = { titulo, orden, activo, enlace: enlace !== undefined ? (enlace || null) : noticia.enlace };
     if (file) {
       // Eliminar imagen anterior si existe
       if (noticia.imagen) deleteNoticiaFile(noticia.imagen);

@@ -6,7 +6,10 @@ import {
   changePassword,
   listUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  confirmAccount,
+  forgotPassword,
+  resetPassword
 } from '../controllers/authController';
 import {
   authenticateToken,
@@ -54,8 +57,8 @@ const validateRegister = [
   
   body('role')
     .optional()
-    .isIn(['admin', 'editor', 'viewer'])
-    .withMessage('El rol debe ser admin, editor o viewer'),
+    .isIn(['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal'])
+    .withMessage('El rol no es válido'),
   
   handleValidationErrors
 ];
@@ -108,14 +111,42 @@ const validateUserUpdate = [
   
   body('role')
     .optional()
-    .isIn(['admin', 'editor', 'viewer'])
-    .withMessage('El rol debe ser admin, editor o viewer'),
+    .isIn(['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal'])
+    .withMessage('El rol no es válido'),
   
   body('isActive')
     .optional()
     .isBoolean()
     .withMessage('isActive debe ser true o false'),
   
+  handleValidationErrors
+];
+
+const validateConfirmAccount = [
+  body('token')
+    .notEmpty()
+    .withMessage('El token es requerido'),
+  handleValidationErrors
+];
+
+const validateForgotPassword = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Debe ser un email válido')
+    .normalizeEmail(),
+  handleValidationErrors
+];
+
+const validateResetPassword = [
+  body('token')
+    .notEmpty()
+    .withMessage('El token es requerido'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('La nueva contraseña debe tener al menos 8 caracteres')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'),
   handleValidationErrors
 ];
 
@@ -133,6 +164,24 @@ router.post('/login',
   logAuthAttempt,
   validateLogin,
   login
+);
+
+router.post('/confirm-account',
+  authRateLimit,
+  validateConfirmAccount,
+  confirmAccount
+);
+
+router.post('/forgot-password',
+  authRateLimit,
+  validateForgotPassword,
+  forgotPassword
+);
+
+router.post('/reset-password',
+  authRateLimit,
+  validateResetPassword,
+  resetPassword
 );
 
 // Rutas protegidas
