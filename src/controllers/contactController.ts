@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs';
 import { ContactConfig } from '../models/ContactConfig';
 import generateContactEmailHTML from '../helpers/htmlContactEmail';
 import { EmailService } from './email-service/EmailService';
@@ -78,6 +79,18 @@ export const sendContactEmail = async (req: Request, res: Response): Promise<voi
     });
 
     const logoPath = path.resolve(process.cwd(), 'public/emailPhotos/motocleEmail.png');
+    const attachments = [];
+
+    if (fs.existsSync(logoPath)) {
+      attachments.push({
+        filename: 'logo-uttecam.png',
+        path: logoPath,
+        cid: 'logo',
+        contentType: 'image/png',
+      });
+    } else {
+      console.warn(`⚠️ Logo institucional no encontrado para adjuntar en correo en la ruta: ${logoPath}`);
+    }
     
     const timeId = new Date().toLocaleString('es-MX', { 
       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' 
@@ -87,14 +100,7 @@ export const sendContactEmail = async (req: Request, res: Response): Promise<voi
       to: destEmail,
       subject: `Contacto Web: ${nombre} [${timeId}]`,
       htmlBody,
-      attachments: [
-        {
-          filename: 'logo-uttecam.png',
-          path: logoPath,
-          cid: 'logo',
-          contentType: 'image/png',
-        },
-      ],
+      attachments,
     });
 
     res.json({ success: true, message: 'Correo enviado correctamente' });
