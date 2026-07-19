@@ -637,3 +637,85 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Reenviar correo de confirmación de cuenta
+export const resendConfirmation = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado',
+        message: 'No existe ningún usuario registrado con ese correo electrónico'
+      });
+    }
+
+    if (user.isConfirmed) {
+      return res.status(400).json({
+        error: 'Cuenta ya confirmada',
+        message: 'Esta cuenta ya se encuentra activa y confirmada. Ya puedes iniciar sesión.'
+      });
+    }
+
+    // Generar un nuevo token de confirmación de cuenta
+    const confirmationToken = crypto.randomBytes(32).toString('hex');
+    user.confirmationToken = confirmationToken;
+    await user.save();
+
+    // Enviar email de confirmación
+    try {
+      const emailService = EmailService.forTramites();
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const confirmationLink = `${frontendUrl}/confirmar-cuenta?token=${confirmationToken}`;
+
+      await emailService.sendEmail({
+        to: email,
+        subject: 'UTTECAM - Confirma tu cuenta (Reenvío)',
+        htmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="color: #0A9782; margin: 0;">UTTECAM</h2>
+              <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">Panel de Administración</p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;" />
+            <h3 style="color: #1e293b; margin-top: 0;">¡Hola ${user.username}!</h3>
+            <p style="color: #334155; line-height: 1.5; font-size: 16px;">
+              Has solicitado el reenvío del correo de confirmación para tu cuenta en el Panel de Administración de la UTTECAM. Por favor, confírmala haciendo clic en el siguiente enlace:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${confirmationLink}" style="background-color: #fe6a07; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
+                Confirmar Cuenta
+              </a>
+            </div>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5;">
+              Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:
+              <br />
+              <a href="${confirmationLink}" style="color: #0A9782; word-break: break-all;">${confirmationLink}</a>
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+              Este es un correo automático, por favor no respondas a este mensaje.
+            </p>
+          </div>
+        `
+      });
+      console.log(`✉️ Reenvío de email de confirmación enviado exitosamente a ${email}`);
+    } catch (emailError: any) {
+      console.error('❌ Error al reenviar email de confirmación:', emailError.message);
+    }
+
+    res.json({
+      message: 'Se ha enviado un nuevo enlace de confirmación a tu correo electrónico.'
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo reenviar el correo de confirmación'
+    });
+  }
+};

@@ -9,7 +9,8 @@ import {
   deleteUser,
   confirmAccount,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  resendConfirmation
 } from '../controllers/authController';
 import {
   authenticateToken,
@@ -139,6 +140,15 @@ const validateForgotPassword = [
   handleValidationErrors
 ];
 
+const validateResendConfirmation = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Debe ser un email válido')
+    .normalizeEmail(),
+  handleValidationErrors
+];
+
 const validateResetPassword = [
   body('token')
     .notEmpty()
@@ -171,6 +181,12 @@ router.post('/confirm-account',
   authRateLimit,
   validateConfirmAccount,
   confirmAccount
+);
+
+router.post('/resend-confirmation',
+  authRateLimit,
+  validateResendConfirmation,
+  resendConfirmation
 );
 
 router.post('/forgot-password',
