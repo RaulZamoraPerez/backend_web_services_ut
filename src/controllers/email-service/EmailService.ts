@@ -31,17 +31,14 @@ function resolveSmtpConfig() {
   const mailerService = (process.env.MAILER_SERVICE || '').toLowerCase().trim();
 
   let host = process.env.MAILER_HOST || 'smtp.gmail.com';
-  let port = parseInt(process.env.MAILER_PORT || '465', 10);
-  let secure = process.env.MAILER_SECURE === 'true';
+  // If port/secure are specified in env, use them, otherwise default to 465/true for Gmail
+  let port = process.env.MAILER_PORT ? parseInt(process.env.MAILER_PORT, 10) : 465;
+  let secure = process.env.MAILER_SECURE !== undefined ? process.env.MAILER_SECURE === 'true' : true;
 
   if (mailerService === 'office365' || mailerService === 'ofiice365' || mailerService === 'outlook') {
     host = 'smtp.office365.com';
     port = 587;
     secure = false;
-  } else if (!process.env.MAILER_HOST) {
-    host = 'smtp.gmail.com';
-    port = 465;
-    secure = true;
   }
 
   return { host, port, secure, mailerService };

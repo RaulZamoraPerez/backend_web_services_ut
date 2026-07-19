@@ -18,7 +18,8 @@ import {
 } from '../middleware/auth';
 import {
   authRateLimit,
-  strictRateLimit
+  strictRateLimit,
+  registerRateLimit
 } from '../middleware/rateLimiter';
 import {
   logAuthAttempt,
@@ -52,7 +53,7 @@ const validateRegister = [
   body('password')
     .isLength({ min: 8 })
     .withMessage('La contraseña debe tener al menos 8 caracteres')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/)
     .withMessage('La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'),
   
   body('role')
@@ -86,7 +87,7 @@ const validatePasswordChange = [
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('La nueva contraseña debe tener al menos 8 caracteres')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/)
     .withMessage('La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'),
   
   handleValidationErrors
@@ -145,14 +146,14 @@ const validateResetPassword = [
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('La nueva contraseña debe tener al menos 8 caracteres')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/)
     .withMessage('La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'),
   handleValidationErrors
 ];
 
 // Rutas públicas
 router.post('/register', 
-  authRateLimit,
+  registerRateLimit,
   logAuthAttempt,
   logCriticalOperation('User Registration'),
   validateRegister,

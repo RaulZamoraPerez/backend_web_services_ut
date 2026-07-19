@@ -48,6 +48,20 @@ export const authRateLimit = rateLimit({
   skipSuccessfulRequests: true, // No contar requests exitosos
 });
 
+// Rate limiter específico para registro de usuarios (más permisivo para evitar bloqueos por validación)
+export const registerRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // hasta 15 intentos de registro por IP cada 15 minutos
+  message: {
+    error: 'Demasiados intentos de registro',
+    message: 'Máximo 15 intentos cada 15 minutos por IP. Intenta de nuevo más tarde.',
+    retryAfter: '15 minutos'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
 // Slow down middleware - ralentiza requests progresivamente
 export const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutos
