@@ -59,7 +59,7 @@ const validateRegister = [
   
   body('role')
     .optional()
-    .isIn(['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal'])
+    .isIn(['admin', 'servicios_escolares', 'servicios escolares', 'normal', 'admin_pro', 'admin pro'])
     .withMessage('El rol no es válido'),
   
   handleValidationErrors
@@ -113,7 +113,7 @@ const validateUserUpdate = [
   
   body('role')
     .optional()
-    .isIn(['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal'])
+    .isIn(['admin', 'servicios_escolares', 'servicios escolares', 'normal', 'admin_pro', 'admin pro'])
     .withMessage('El rol no es válido'),
   
   body('isActive')

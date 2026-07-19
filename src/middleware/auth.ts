@@ -81,28 +81,14 @@ export const requireRole = (roles: string[]) => {
     const userRole = req.user.role.toLowerCase();
     let isAllowed = false;
 
-    // admin_pro or admin pro has access to everything
-    if (userRole === 'admin_pro' || userRole === 'admin pro') {
+    // Admin roles (admin, admin_pro, admin pro) have access to everything
+    if (userRole === 'admin' || userRole === 'admin_pro' || userRole === 'admin pro') {
       isAllowed = true;
     } else {
       const normalizedRoles = roles.map(r => r.toLowerCase());
       
       // Direct match
       if (normalizedRoles.includes(userRole)) {
-        isAllowed = true;
-      }
-      
-      // Hierarchy matches:
-      // If admin is required, allow normal admin
-      if (normalizedRoles.includes('admin') && userRole === 'admin') {
-        isAllowed = true;
-      }
-      // If editor is required, allow normal admin
-      if (normalizedRoles.includes('editor') && userRole === 'admin') {
-        isAllowed = true;
-      }
-      // If viewer is required, allow normal admin and editor
-      if (normalizedRoles.includes('viewer') && (userRole === 'admin' || userRole === 'editor')) {
         isAllowed = true;
       }
       

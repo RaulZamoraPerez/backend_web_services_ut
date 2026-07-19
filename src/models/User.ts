@@ -137,7 +137,7 @@ User.init(
       defaultValue: 'normal',
       validate: {
         isIn: {
-          args: [['admin', 'editor', 'viewer', 'admin_pro', 'admin pro', 'servicios_escolares', 'servicios escolares', 'normal']],
+          args: [['admin', 'servicios_escolares', 'servicios escolares', 'normal', 'admin_pro', 'admin pro']],
           msg: 'El rol no es válido'
         }
       }
