@@ -10,6 +10,8 @@ import { EmailService } from './email-service';
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password, role = 'normal' } = req.body;
+    
+    console.log('=== [DEBUG] Registro de usuario iniciado ===', { username, email, role });
 
     // Validar formato de correo
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
