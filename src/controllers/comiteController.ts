@@ -20,6 +20,7 @@ export const getComites = async (req: Request, res: Response) => {
             include: [{
                 model: ComiteCategory,
                 as: 'categorias',
+                required: false,
                 include: [{
                     model: DocumentoComite,
                     as: 'documentos',
@@ -27,7 +28,11 @@ export const getComites = async (req: Request, res: Response) => {
                     required: false
                 }]
             }],
-            order: [['id', 'ASC']]
+            order: [
+                ['id', 'ASC'],
+                [{ model: ComiteCategory, as: 'categorias' }, 'orden', 'ASC'],
+                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'ASC']
+            ]
         });
 
         res.json(comites || []);
@@ -58,7 +63,11 @@ export const getComiteBySlug = async (req: Request, res: Response) => {
                     where: includeInactive ? {} : { activo: true },
                     required: false
                 }]
-            }]
+            }],
+            order: [
+                [{ model: ComiteCategory, as: 'categorias' }, 'orden', 'ASC'],
+                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'ASC']
+            ]
         });
 
         if (!comite) {
@@ -77,8 +86,12 @@ export const getComiteBySlug = async (req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
     try {
-        const { comiteId, titulo } = req.body;
-        const categoria = await ComiteCategory.create({ comiteId, titulo });
+        const { comiteId, titulo, orden } = req.body;
+        const categoria = await ComiteCategory.create({ 
+            comiteId, 
+            titulo,
+            orden: orden !== undefined ? Number(orden) : 0
+        });
         res.status(201).json(categoria);
     } catch (error) {
         res.status(500).json({ message: 'Error al crear la categoría del comité' });
@@ -88,13 +101,39 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { titulo } = req.body;
+        const { titulo, orden } = req.body;
         const categoria = await ComiteCategory.findByPk(id);
         if (!categoria) return res.status(404).json({ message: 'Categoría no encontrada' });
-        await categoria.update({ titulo });
+        
+        const updateData: any = {};
+        if (titulo !== undefined) updateData.titulo = titulo;
+        if (orden !== undefined) updateData.orden = Number(orden);
+
+        await categoria.update(updateData);
         res.json(categoria);
     } catch (error) {
         res.status(500).json({ message: 'Error al actualizar la categoría' });
+    }
+};
+
+export const reorderCategories = async (req: Request, res: Response) => {
+    try {
+        const { categories } = req.body; // Array of { id, orden }
+        if (!Array.isArray(categories)) {
+            return res.status(400).json({ message: 'Se requiere un arreglo de categorías' });
+        }
+
+        for (const item of categories) {
+            if (item.id) {
+                await ComiteCategory.update(
+                    { orden: Number(item.orden || 0) },
+                    { where: { id: item.id } }
+                );
+            }
+        }
+        res.json({ message: 'Categorías reordenadas correctamente' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error al reordenar categorías' });
     }
 };
 
@@ -206,10 +245,31 @@ export const deleteComite = async (req: Request, res: Response) => {
 // Document Management
 export const addDocumento = async (req: Request, res: Response) => {
     try {
-        const { comiteId, categoriaId, titulo, activo, enlaceAdicional } = req.body;
+        let { comiteId, categoriaId, titulo, activo, enlaceAdicional } = req.body;
 
         if (!req.file) {
             return res.status(400).json({ message: 'Se requiere un archivo' });
+        }
+
+        // Fix encoding if title was parsed as latin1
+        if (titulo) {
+            try {
+                const utf8Decoded = Buffer.from(titulo, 'latin1').toString('utf8');
+                if (!utf8Decoded.includes('\uFFFD')) {
+                    titulo = utf8Decoded;
+                }
+            } catch (e) {}
+        } else if (req.file.originalname) {
+            try {
+                const utf8Decoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+                if (!utf8Decoded.includes('\uFFFD')) {
+                    titulo = utf8Decoded;
+                } else {
+                    titulo = req.file.originalname;
+                }
+            } catch (e) {
+                titulo = req.file.originalname;
+            }
         }
 
         const archivoPath = `/uploads/documentos/${req.file.filename}`;
@@ -217,7 +277,7 @@ export const addDocumento = async (req: Request, res: Response) => {
         const doc = await DocumentoComite.create({
             comiteId,
             categoriaId: categoriaId ? Number(categoriaId) : null,
-            titulo,
+            titulo: titulo || 'Documento',
             archivo: archivoPath,
             enlaceAdicional: enlaceAdicional || null,
             activo: activo === 'true' || activo === true
@@ -232,14 +292,23 @@ export const addDocumento = async (req: Request, res: Response) => {
 export const updateDocumento = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { titulo, activo, categoriaId, enlaceAdicional } = req.body;
+        let { titulo, activo, categoriaId, enlaceAdicional } = req.body;
         const doc = await DocumentoComite.findByPk(id);
         if (!doc) return res.status(404).json({ message: 'Documento no encontrado' });
 
+        if (titulo) {
+            try {
+                const utf8Decoded = Buffer.from(titulo, 'latin1').toString('utf8');
+                if (!utf8Decoded.includes('\uFFFD')) {
+                    titulo = utf8Decoded;
+                }
+            } catch (e) {}
+        }
+
         const updateData: any = { 
-            titulo, 
-            activo: activo === 'true' || activo === true,
-            categoriaId: categoriaId ? Number(categoriaId) : doc.categoriaId,
+            titulo: titulo || doc.titulo, 
+            activo: activo !== undefined ? (activo === 'true' || activo === true) : doc.activo,
+            categoriaId: categoriaId !== undefined && categoriaId !== null && String(categoriaId).trim() !== '' ? Number(categoriaId) : doc.categoriaId,
             enlaceAdicional: enlaceAdicional !== undefined ? enlaceAdicional : doc.enlaceAdicional
         };
         

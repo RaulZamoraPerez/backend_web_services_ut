@@ -265,11 +265,26 @@ const secureStorageDocumentos = multer.diskStorage({
     const randomName = crypto.randomBytes(16).toString('hex');
     const timestamp = Date.now();
     const originalExt = path.extname(file.originalname).toLowerCase();
-    const sanitizedOriginalName = file.originalname
+    const baseNameWithoutExt = path.basename(file.originalname, originalExt);
+
+    let cleanName = baseNameWithoutExt;
+    try {
+      // Decode if Multer parsed filename as latin1
+      const utf8Decoded = Buffer.from(baseNameWithoutExt, 'latin1').toString('utf8');
+      if (!utf8Decoded.includes('\uFFFD')) {
+        cleanName = utf8Decoded;
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    const sanitizedOriginalName = cleanName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9._-]/g, '_')
       .substring(0, 50);
 
-    const filename = `${timestamp}_${randomName}_${sanitizedOriginalName}`;
+    const filename = `${timestamp}_${randomName}_${sanitizedOriginalName}${originalExt}`;
     cb(null, filename);
   }
 });

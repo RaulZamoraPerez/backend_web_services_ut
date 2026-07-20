@@ -10,6 +10,7 @@ import {
     getComiteBySlug,
     createCategory,
     updateCategory,
+    reorderCategories,
     deleteCategory
 } from '../controllers/comiteController';
 import { uploadDocumentos } from '../middleware/uploadMiddleware';
@@ -25,6 +26,7 @@ router.delete('/:id', deleteComite);
 
 // Category Routes
 router.post('/categories', createCategory);
+router.put('/categories/reorder', reorderCategories);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
 
