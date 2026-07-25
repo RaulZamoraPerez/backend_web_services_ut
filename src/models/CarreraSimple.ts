@@ -29,10 +29,6 @@ CarreraSimple.init(
     nombre: {
       type: DataTypes.STRING(200),
       allowNull: false,
-      unique: {
-        name: 'unique_nombre_carrera_simple',
-        msg: 'Ya existe una carrera con este nombre.',
-      },
     },
     tipo: {
       type: DataTypes.ENUM('TSU', 'INGENIERIA', 'LICENCIATURA', 'MAESTRIA', 'DOCTORADO', 'OTRO'),
@@ -48,5 +44,12 @@ CarreraSimple.init(
     sequelize,
     tableName: 'carreras_simples',
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['nombre', 'tipo'],
+        name: 'unique_nombre_tipo_carrera_simple',
+      }
+    ]
   }
 );

@@ -2,6 +2,8 @@ import { Router } from "express";
 import { FormularioConfigController } from "../controllers/formularios-config/FormularioConfigController";
 import { body, param } from "express-validator";
 import { handleValidationErrors } from "../middleware/validation";
+import { authenticateToken } from "../middleware/auth";
+import fileUpload from "express-fileupload";
 
 export class FormularioConfigRoute {
 
@@ -189,6 +191,36 @@ export class FormularioConfigRoute {
       param('index').isInt({ min: 0 }).withMessage('El índice debe ser un número entero positivo.'),
       handleValidationErrors,
       controller.deleteDocumento
+    );
+
+    // ==================== RECURSOS ====================
+
+    // POST - Agregar recurso (protegida, con fileUpload)
+    router.post('/:tipo/recursos',
+      authenticateToken,
+      param('tipo').notEmpty().withMessage('El tipo de formulario es requerido.'),
+      fileUpload({
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+        abortOnLimit: true,
+        preserveExtension: 4,
+      }),
+      controller.addRecurso
+    );
+
+    // GET - Obtener recursos (pública)
+    router.get('/:tipo/recursos',
+      param('tipo').notEmpty().withMessage('El tipo de formulario es requerido.'),
+      handleValidationErrors,
+      controller.getRecursos
+    );
+
+    // DELETE - Eliminar recurso (protegida)
+    router.delete('/:tipo/recursos/:index',
+      authenticateToken,
+      param('tipo').notEmpty().withMessage('El tipo de formulario es requerido.'),
+      param('index').isInt({ min: 0 }).withMessage('El índice debe ser un número entero positivo.'),
+      handleValidationErrors,
+      controller.deleteRecurso
     );
 
     return router;

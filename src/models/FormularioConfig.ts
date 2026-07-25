@@ -13,6 +13,7 @@ export class FormularioConfig extends Model {
   public requisitos!: string[];
   public pasos!: string[] | null;
   public documentos!: string[] | null;
+  public recursos!: { nombre: string; path: string }[] | null;
   public activo!: boolean;
 
   public readonly createdAt!: Date;
@@ -67,6 +68,11 @@ FormularioConfig.init(
       defaultValue: [],
     },
     documentos: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+    },
+    recursos: {
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: [],

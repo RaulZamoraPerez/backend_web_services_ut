@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { FormularioConfigService } from "./FormularioConfigService";
 import { CustomError } from "../../errors/CustomErrors";
+import { UploadedFile } from "express-fileupload";
+import path from "path";
+import fs from "fs";
 
 export class FormularioConfigController {
 
@@ -209,6 +212,94 @@ export class FormularioConfigController {
       return res.status(200).json(resultado);
     } catch (error) {
       return this.handleError(res, error, "deleteDocumento");
+    }
+  }
+
+  // ==================== RECURSOS ====================
+
+  addRecurso = async (req: Request, res: Response) => {
+    try {
+      const { tipo } = req.params;
+      const { nombre } = req.body;
+
+      if (!nombre || nombre.trim() === '') {
+        throw CustomError.badRequest("El nombre del recurso es requerido.");
+      }
+
+      const files = req.files as any;
+      if (!files || !files.archivo) {
+        throw CustomError.badRequest("El archivo es requerido.");
+      }
+
+      const archivo = files.archivo as UploadedFile;
+      const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+      if (!allowedMimeTypes.includes(archivo.mimetype)) {
+        throw CustomError.badRequest("El archivo debe ser un PDF o una imagen (JPEG/PNG/WEBP).");
+      }
+
+      // Crear directorio si no existe
+      const UPLOAD_DIR = "uploads/tramites_recursos";
+      const uploadPath = path.join(process.cwd(), UPLOAD_DIR);
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+
+      // Generar nombre único para el archivo
+      const timestamp = Date.now();
+      const ext = path.extname(archivo.name);
+      const baseName = path.basename(archivo.name, ext)
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .substring(0, 50);
+      const fileName = `${baseName}_${timestamp}${ext}`;
+      const filePath = path.join(uploadPath, fileName);
+
+      // Guardar archivo
+      await archivo.mv(filePath);
+
+      // Ruta relativa para guardar en BD
+      const relativePath = `${UPLOAD_DIR}/${fileName}`;
+
+      const resultado = await this.service.addRecurso(tipo, nombre.trim(), relativePath);
+
+      return res.status(201).json({
+        message: "Recurso agregado exitosamente",
+        data: resultado
+      });
+    } catch (error) {
+      return this.handleError(res, error, "addRecurso");
+    }
+  }
+
+  getRecursos = async (req: Request, res: Response) => {
+    try {
+      const { tipo } = req.params;
+      const resultado = await this.service.getRecursos(tipo);
+
+      // Formatear las URLs absolutas para la descarga
+      const baseUrl = process.env.API_URL || 'http://localhost:3000';
+      const recursosConUrl = resultado.map(r => ({
+        nombre: r.nombre,
+        path: r.path,
+        url: `${baseUrl}/${r.path}`
+      }));
+
+      return res.status(200).json(recursosConUrl);
+    } catch (error) {
+      return this.handleError(res, error, "getRecursos");
+    }
+  }
+
+  deleteRecurso = async (req: Request, res: Response) => {
+    try {
+      const { tipo, index } = req.params;
+      const resultado = await this.service.deleteRecurso(tipo, parseInt(index));
+      return res.status(200).json({
+        message: "Recurso eliminado exitosamente",
+        data: resultado
+      });
+    } catch (error) {
+      return this.handleError(res, error, "deleteRecurso");
     }
   }
 

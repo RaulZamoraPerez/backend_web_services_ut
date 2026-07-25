@@ -1,5 +1,7 @@
 import { CustomError } from "../../errors/CustomErrors";
 import { FormularioConfig } from "../../models/FormularioConfig";
+import path from "path";
+import fs from "fs";
 
 // ==================== INTERFACES ====================
 
@@ -427,6 +429,81 @@ export class FormularioConfigService {
       if (error instanceof CustomError) throw error;
       console.error("Error en deleteDocumento:", error);
       throw CustomError.internalServer("Error al eliminar el documento.");
+    }
+  }
+
+  // ==================== RECURSOS ====================
+
+  /**
+   * GET - Obtener todos los recursos de un formulario
+   */
+  async getRecursos(tipo: string): Promise<{ nombre: string; path: string }[]> {
+    try {
+      const registro = await this.findByTipo(tipo);
+      return this.getArrayField(registro.recursos);
+    } catch (error) {
+      if (error instanceof CustomError) throw error;
+      console.error("Error en getRecursos:", error);
+      throw CustomError.internalServer("Error al obtener los recursos.");
+    }
+  }
+
+  /**
+   * POST - Agregar un recurso a un formulario
+   */
+  async addRecurso(tipo: string, nombre: string, pathUrl: string): Promise<{ nombre: string; path: string }[]> {
+    try {
+      const registro = await this.findByTipo(tipo);
+      const recursos = [...this.getArrayField(registro.recursos)];
+
+      recursos.push({ nombre, path: pathUrl });
+      registro.recursos = recursos;
+      registro.changed('recursos', true);
+      await registro.save();
+
+      return recursos;
+    } catch (error) {
+      if (error instanceof CustomError) throw error;
+      console.error("Error en addRecurso:", error);
+      throw CustomError.internalServer("Error al agregar el recurso.");
+    }
+  }
+
+  /**
+   * DELETE - Eliminar un recurso por índice
+   */
+  async deleteRecurso(tipo: string, index: number): Promise<{ nombre: string; path: string }[]> {
+    try {
+      const registro = await this.findByTipo(tipo);
+      const recursos = [...this.getArrayField(registro.recursos)];
+
+      if (index < 0 || index >= recursos.length) {
+        throw CustomError.notFound(`No existe recurso en el índice ${index}.`);
+      }
+
+      // Borrar archivo físico
+      const recurso = recursos[index];
+      if (recurso && recurso.path) {
+        try {
+          const fullPath = path.join(process.cwd(), recurso.path);
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+          }
+        } catch (e) {
+          console.error("Error al eliminar archivo físico de recurso:", e);
+        }
+      }
+
+      recursos.splice(index, 1);
+      registro.recursos = recursos;
+      registro.changed('recursos', true);
+      await registro.save();
+
+      return recursos;
+    } catch (error) {
+      if (error instanceof CustomError) throw error;
+      console.error("Error en deleteRecurso:", error);
+      throw CustomError.internalServer("Error al eliminar el recurso.");
     }
   }
 

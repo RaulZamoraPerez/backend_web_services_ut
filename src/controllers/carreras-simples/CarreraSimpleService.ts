@@ -34,13 +34,13 @@ export class CarreraSimpleService {
         throw CustomError.badRequest("El tipo de carrera es requerido.");
       }
 
-      // Verificar si ya existe una carrera con ese nombre
+      // Verificar si ya existe una carrera con ese nombre y tipo
       const existente = await CarreraSimple.findOne({
-        where: { nombre: nombre.trim() }
+        where: { nombre: nombre.trim(), tipo }
       });
 
       if (existente) {
-        throw CustomError.badRequest(`Ya existe una carrera con el nombre '${nombre}'.`);
+        throw CustomError.badRequest(`Ya existe la carrera '${nombre}' con el nivel '${tipo}'.`);
       }
 
       const carrera = await CarreraSimple.create({
@@ -160,15 +160,24 @@ export class CarreraSimpleService {
           throw CustomError.badRequest("El nombre de la carrera no puede estar vacío.");
         }
 
-        // Verificar que el nombre no esté en uso por otra carrera
+        // Verificar que no se duplique con otra carrera del mismo nombre y tipo
+        const tipoCheck = data.tipo !== undefined ? data.tipo : carrera.tipo;
         const existente = await CarreraSimple.findOne({
-          where: { nombre: nombreTrim }
+          where: { nombre: nombreTrim, tipo: tipoCheck }
         });
         if (existente && existente.id !== id) {
-          throw CustomError.badRequest(`El nombre '${nombreTrim}' ya está en uso por otra carrera.`);
+          throw CustomError.badRequest(`La carrera '${nombreTrim}' ya existe en el nivel '${tipoCheck}'.`);
         }
 
         carrera.nombre = nombreTrim;
+      } else if (data.tipo !== undefined) {
+        // Si solo cambia el tipo, verificar que no se duplique con otra carrera del mismo nombre
+        const existente = await CarreraSimple.findOne({
+          where: { nombre: carrera.nombre, tipo: data.tipo }
+        });
+        if (existente && existente.id !== id) {
+          throw CustomError.badRequest(`La carrera '${carrera.nombre}' ya existe en el nivel '${data.tipo}'.`);
+        }
       }
 
       if (data.tipo !== undefined) carrera.tipo = data.tipo;

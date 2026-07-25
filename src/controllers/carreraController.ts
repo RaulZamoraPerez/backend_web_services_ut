@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Sequelize } from 'sequelize';
 import Carrera from '../models/Carrera';
 import { CarreraConfig } from '../models/CarreraConfig';
 import fs from 'fs/promises';
@@ -379,5 +380,38 @@ export const updateCarreraConfig = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al actualizar config de carreras:', error);
     res.status(500).json({ message: 'Error al actualizar config de carreras' });
+  }
+};
+
+// PUT - Renombrar una categoría / nivel académico en todas las carreras
+export const renameNivel = async (req: Request, res: Response) => {
+  try {
+    const { oldNivel, newNivel } = req.body;
+
+    if (!oldNivel || !newNivel || !oldNivel.trim() || !newNivel.trim()) {
+      return res.status(400).json({ message: 'Los campos oldNivel y newNivel son requeridos.' });
+    }
+
+    const cleanOld = oldNivel.trim();
+    const cleanNew = newNivel.trim();
+
+    // Actualizar el campo 'nivel' en todas las carreras usando comparación insensible a mayúsculas/minúsculas
+    const [affectedCount] = await Carrera.update(
+      { nivel: cleanNew },
+      { 
+        where: Sequelize.where(
+          Sequelize.fn('LOWER', Sequelize.col('nivel')),
+          cleanOld.toLowerCase()
+        )
+      }
+    );
+
+    res.json({ 
+      message: `Categoría renombrada exitosamente. Se actualizaron ${affectedCount} carreras.`,
+      affectedCount 
+    });
+  } catch (error) {
+    console.error('Error al renombrar categoría/nivel:', error);
+    res.status(500).json({ message: 'Error al renombrar la categoría.' });
   }
 };

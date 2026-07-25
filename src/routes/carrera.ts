@@ -10,6 +10,7 @@ import {
   updateOrder,
   getCarreraConfig,
   updateCarreraConfig,
+  renameNivel,
 } from '../controllers/carreraController';
 import { authenticateToken } from '../middleware/authMiddleware';
 import { uploadCarrera, saveCarreraFiles } from '../middleware/uploadMiddleware';
@@ -37,6 +38,7 @@ router.get('/:id', getCarreraById);
 router.put('/config', authenticateToken, updateCarreraConfig);
 router.get('/admin/all', authenticateToken, getAllCarreras);
 router.put('/order', authenticateToken, updateOrder); // Nueva ruta para ordenar
+router.put('/rename-nivel', authenticateToken, renameNivel); // Nueva ruta para renombrar nivel
 router.post('/', authenticateToken, uploadCarrera, logFormFieldCount, saveCarreraFiles, createCarrera);
 router.put('/:id', authenticateToken, uploadCarrera, logFormFieldCount, saveCarreraFiles, updateCarrera);
 router.delete('/:id', authenticateToken, deleteCarrera);

@@ -16,8 +16,10 @@ const deleteNoticiaFile = (filename: string) => {
 
 export const getNoticias = async (req: Request, res: Response) => {
   try {
+    const includeInactive = req.query.includeInactive === 'true';
+    const whereClause = includeInactive ? {} : { activo: true };
     const noticias = await Noticia.findAll({
-      where: { activo: true },
+      where: whereClause,
       order: [['orden', 'ASC']],
     });
     res.json(noticias);
@@ -29,7 +31,7 @@ export const getNoticias = async (req: Request, res: Response) => {
 
 export const createNoticia = async (req: Request, res: Response) => {
   try {
-    const { titulo, enlace } = req.body;
+    const { titulo, enlace, activo } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -41,7 +43,7 @@ export const createNoticia = async (req: Request, res: Response) => {
       imagen: file.filename,
       enlace: enlace || null,
       orden: 0,
-      activo: true,
+      activo: activo !== undefined ? (activo === 'true' || activo === true) : true,
     });
 
     res.status(201).json(noticia);

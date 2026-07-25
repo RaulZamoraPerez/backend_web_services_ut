@@ -5,7 +5,7 @@ interface CarreraAttributes {
   id?: number;
   nombre: string;
   siglas: string;
-  nivel: 'TSU' | 'Ingenieria' | 'Licenciatura';
+  nivel: string;
   duracion: string;
   objetivo: string;
   perfil_ingreso: string;
@@ -29,7 +29,7 @@ class Carrera extends Model<CarreraAttributes> implements CarreraAttributes {
   public id!: number;
   public nombre!: string;
   public siglas!: string;
-  public nivel!: 'TSU' | 'Ingenieria' | 'Licenciatura';
+  public nivel!: string;
   public duracion!: string;
   public objetivo!: string;
   public perfil_ingreso!: string;
@@ -65,7 +65,7 @@ Carrera.init(
       allowNull: false,
     },
     nivel: {
-      type: DataTypes.ENUM('TSU', 'Ingenieria', 'Licenciatura'),
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
     duracion: {

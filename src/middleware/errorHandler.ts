@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import type multer from 'multer';
+import { CustomError } from '../errors/CustomErrors';
 
 export function notFound(req: Request, res: Response) {
   res.status(404).json({ error: 'Ruta no encontrada' });
@@ -7,6 +8,11 @@ export function notFound(req: Request, res: Response) {
 
 export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
   console.error('[ERROR]', err);
+
+  if (err instanceof CustomError) {
+    return res.status(err.statusCode).json({ error: err.message });
+  }
+
   // Multer specific handling
   if (err && (err as multer.MulterError)?.code) {
     const mErr = err as multer.MulterError;
