@@ -499,15 +499,13 @@ const heroSlideStorage = multer.memoryStorage();
 const _uploadHeroSlidesMulter = multer({
   storage: heroSlideStorage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB para videos
+    fileSize: 200 * 1024 * 1024, // 200MB para videos de alta resolución
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
-
-    if (allowedMimes.includes(file.mimetype)) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
-      cb(new Error('Tipo de archivo no permitido. Solo imágenes (JPEG, PNG, WEBP, GIF) y videos (MP4, WEBM)'));
+      cb(new Error('Tipo de archivo no permitido. Solo imágenes y videos'));
     }
   }
 }).fields([

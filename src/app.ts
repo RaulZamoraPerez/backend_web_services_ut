@@ -171,11 +171,15 @@ const allowedExtensions = [
 ];
 
 app.use('/uploads',
-  // Rate limit para downloads
+  // Rate limit para downloads (eximiendo streaming de video y peticiones de rango)
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 200, // máximo 200 descargas por IP cada 15 minutos
-    message: { error: 'Límite de descargas excedido' }
+    max: 5000, // máximo 5000 peticiones por IP cada 15 minutos
+    message: { error: 'Límite de descargas excedido' },
+    skip: (req) => {
+      const ext = path.extname(req.path).toLowerCase();
+      return ['.mp4', '.webm', '.ogg', '.mov', '.m4v', '.3gp'].includes(ext) || !!req.headers.range;
+    }
   }),
   // Middleware para validar extensiones ANTES de servir
   (req, res, next) => {

@@ -72,8 +72,10 @@ Directorios.init(
           args: [0, 20],
           msg: 'El teléfono no puede tener más de 20 caracteres'
         },
-        isNumeric: {
-          msg: 'El teléfono debe contener solo números'
+        isValidPhone(value: string) {
+          if (value && value.trim() !== '' && !/^[\d\s\-\(\)\+]+$/.test(value)) {
+            throw new Error('El teléfono debe contener solo números, espacios o guiones');
+          }
         }
       }
     },
@@ -85,8 +87,10 @@ Directorios.init(
           args: [0, 10],
           msg: 'La extensión no puede tener más de 10 caracteres'
         },
-        isNumeric: {
-          msg: 'La extensión debe contener solo números'
+        isNumericIfNotEmpty(value: string) {
+          if (value && value.trim() !== '' && !/^\d+$/.test(value)) {
+            throw new Error('La extensión debe contener solo números');
+          }
         }
       }
     },
@@ -98,8 +102,13 @@ Directorios.init(
           args: [0, 150],
           msg: 'El correo no puede tener más de 150 caracteres'
         },
-        isEmail: {
-          msg: 'Debe ser un correo electrónico válido'
+        isEmailIfNotEmpty(value: string) {
+          if (value && value.trim() !== '') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              throw new Error('Debe ser un correo electrónico válido');
+            }
+          }
         }
       }
     },

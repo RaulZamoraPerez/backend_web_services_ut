@@ -273,11 +273,41 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
   }
 
   if (force) {
-    console.log('Ã°Å¸â€â€ž Base de datos reiniciada - Tablas creadas');
+    console.log('Ã°Å¸â€ â€ž Base de datos reiniciada - Tablas creadas');
     console.log('Ã°Å¸â€œâ€¹ Modelos registrados: Texto, Area, SolicitudesConstanciasKardex, NosotrosContent, Calendario, HeroSlide, Evento, Noticia, Anuncio, Carrera');
   } else {
     console.log('Ã¢Å“â€¦ Modelos sincronizados con la base de datos');
-    console.log('Ã°Å¸â€â€” Asociaciones registradas correctamente');
+    console.log('Ã°Å¸â€ â€” Asociaciones registradas correctamente');
+  }
+
+  // Corregir índices de carreras_simples si es necesario
+  try {
+    const [indexes]: any = await sequelize.query(`
+      SELECT INDEX_NAME 
+      FROM information_schema.statistics 
+      WHERE table_schema = DATABASE() 
+        AND table_name = 'carreras_simples'
+    `);
+    
+    const indexNames = indexes.map((idx: any) => {
+      const keys = Object.keys(idx);
+      const nameKey = keys.find(k => k.toLowerCase() === 'index_name');
+      return nameKey ? idx[nameKey] : null;
+    }).filter(Boolean);
+    
+    if (indexNames.includes('unique_nombre_carrera_simple')) {
+      console.log('🔄 Corrigiendo índice único incorrecto en carreras_simples...');
+      await sequelize.query('ALTER TABLE carreras_simples DROP INDEX unique_nombre_carrera_simple');
+      console.log('✅ Se eliminó el índice unique_nombre_carrera_simple');
+    }
+    
+    if (!indexNames.includes('unique_nombre_tipo_carrera_simple')) {
+      console.log('🔄 Añadiendo índice único compuesto (nombre, tipo) en carreras_simples...');
+      await sequelize.query('ALTER TABLE carreras_simples ADD UNIQUE INDEX unique_nombre_tipo_carrera_simple (nombre, tipo)');
+      console.log('✅ Se añadió el índice unique_nombre_tipo_carrera_simple');
+    }
+  } catch (indexError: any) {
+    console.error('❌ Error al corregir los índices de carreras_simples:', indexError.message);
   }
 
   try {
