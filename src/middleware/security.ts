@@ -79,15 +79,11 @@ export const additionalSecurityHeaders = (req: Request, res: Response, next: Nex
     res.setHeader('Expires', '0');
   }
   
-  // Cross-Origin Resource Policy - Permitir cross-origin para archivos estáticos
-  if (req.path.startsWith('/uploads')) {
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  } else {
-    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  }
+  // Cross-Origin Resource Policy - Permitir cross-origin para la API y archivos estáticos
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   
   // Cross-Origin Opener Policy
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   
   next();
 };

@@ -93,28 +93,14 @@ import OpcionReinscripcionRoute from './routes/OpcionReinscripcionRoute';
 
 const app = express();
 
-// 1. HEADERS DE SEGURIDAD (aplicar primero)
-app.use(securityHeaders);
-app.use(additionalSecurityHeaders);
-
-// 2. LOGGING HTTP
-app.use(httpLogging);
-
-// 3. DETECCIÓN DE ATAQUES
-app.use(detectAttackPatterns);
-
-// 4. RATE LIMITING
-app.use(apiRateLimit);
-app.use(speedLimiter);
-
-// 5. CORS SEGURO
+// 1. CORS SEGURO (Mapear e invocar PRIMERO para interceptar preflights OPTIONS)
 const envOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
 const defaultOrigins = [
   'https://uttecam.edu.mx',
-  'https://uttecam.edu.mx',
+  'https://www.uttecam.edu.mx',
   'https://estudiantes.uttecam.edu.mx',
   'https://dashboard.uttecam.edu.mx',
   'https://api.uttecam.edu.mx',
@@ -142,6 +128,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // Asegurar que las peticiones preflight OPTIONS respondan correctamente para todas las rutas
 app.options('*', cors(corsOptions));
+
+// 2. HEADERS DE SEGURIDAD
+app.use(securityHeaders);
+app.use(additionalSecurityHeaders);
+
+// 3. LOGGING HTTP
+app.use(httpLogging);
+
+// 4. DETECCIÓN DE ATAQUES
+app.use(detectAttackPatterns);
+
+// 5. RATE LIMITING
+app.use(apiRateLimit);
+app.use(speedLimiter);
 
 // 6. PARSERS DE BODY (excluir rutas de upload del parsing JSON)
 app.use((req, res, next) => {
