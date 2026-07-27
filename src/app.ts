@@ -108,19 +108,31 @@ app.use(apiRateLimit);
 app.use(speedLimiter);
 
 // 5. CORS SEGURO
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+const defaultOrigins = [
+  'https://uttecam.edu.mx',
+  'https://www.uttecam.edu.mx',
+  'https://estudiantes.uttecam.edu.mx',
+  'https://dashboard.uttecam.edu.mx',
+  'https://api.uttecam.edu.mx',
+];
+
+const allowedOrigins = Array.from(new Set([...envOrigins, ...defaultOrigins]));
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN?.split(',') || [
-    'https://uttecam.edu.mx',
-    'https://www.uttecam.edu.mx',
-    'https://estudiantes.uttecam.edu.mx',
-    'https://dashboard.uttecam.edu.mx',
-    'https://api.uttecam.edu.mx',
-    // 'http://localhost:3000',
-    // 'http://localhost:3001',
-    // 'http://localhost:5173', // Vite dev server, used by UTTECAM
-    // 'http://localhost:5174',
-    // 'http://localhost:5175',
-  ],
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Permitir peticiones sin origen (curl, Postman, health checks o servidor a servidor)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Origen no permitido bloqueado: ${origin}`);
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'Accept', 'X-Requested-With', 'Cache-Control', 'Pragma'],
   credentials: false, // Importante: no permitir credenciales para mayor seguridad
