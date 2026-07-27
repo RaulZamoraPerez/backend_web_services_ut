@@ -110,16 +110,16 @@ app.use(speedLimiter);
 // 5. CORS SEGURO
 const corsOptions = {
   origin: process.env.CORS_ORIGIN?.split(',') || [
-    'http://localhost:3000',
-    'https://estudiantes.uttecam.edu.mx',
-    'https://dashboard.uttecam.edu.mx',
-    'http://localhost:3001',
-    'http://localhost:5173', // Vite dev server, used by UTTECAM
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'https://api.uttecam.edu.mx',
     'https://uttecam.edu.mx',
     'https://www.uttecam.edu.mx',
+    'https://estudiantes.uttecam.edu.mx',
+    'https://dashboard.uttecam.edu.mx',
+    'https://api.uttecam.edu.mx',
+    // 'http://localhost:3000',
+    // 'http://localhost:3001',
+    // 'http://localhost:5173', // Vite dev server, used by UTTECAM
+    // 'http://localhost:5174',
+    // 'http://localhost:5175',
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'Accept', 'X-Requested-With', 'Cache-Control', 'Pragma'],
@@ -227,9 +227,9 @@ app.use('/uploads',
         "'self'",
         'https://www.uttecam.edu.mx',
         'https://uttecam.edu.mx',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175'
+        // 'http://localhost:5173',
+        // 'http://localhost:5174',
+        // 'http://localhost:5175'
       ];
       res.setHeader('Content-Security-Policy', `frame-ancestors ${allowedFrameAncestors.join(' ')};`);
 
