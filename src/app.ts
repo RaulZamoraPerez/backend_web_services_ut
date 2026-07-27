@@ -114,7 +114,7 @@ const envOrigins = process.env.CORS_ORIGIN
 
 const defaultOrigins = [
   'https://uttecam.edu.mx',
-  'https://www.uttecam.edu.mx',
+  'https://uttecam.edu.mx',
   'https://estudiantes.uttecam.edu.mx',
   'https://dashboard.uttecam.edu.mx',
   'https://api.uttecam.edu.mx',
