@@ -277,11 +277,11 @@ export class FormularioConfigController {
       const resultado = await this.service.getRecursos(tipo);
 
       // Formatear las URLs absolutas para la descarga
-      const baseUrl = process.env.API_URL || 'http://localhost:3000';
+      const baseUrl = process.env.API_URL ? process.env.API_URL.replace(/\/$/, '') : '';
       const recursosConUrl = resultado.map(r => ({
         nombre: r.nombre,
         path: r.path,
-        url: `${baseUrl}/${r.path}`
+        url: r.path.startsWith('/') ? `${baseUrl}${r.path}` : `${baseUrl}/${r.path}`
       }));
 
       return res.status(200).json(recursosConUrl);

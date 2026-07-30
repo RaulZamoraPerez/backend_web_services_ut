@@ -122,7 +122,7 @@ export class SeccionReinscripcionService {
    * Formatear respuesta
    */
   private formatResponse(seccion: SeccionReinscripcion): SeccionReinscripcionResponse {
-    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+    const baseUrl = process.env.API_URL ? process.env.API_URL.replace(/\/$/, '') : '';
     const instructivoUrl = seccion.instructivoPath
       ? `${baseUrl}/api/opciones-reinscripcion/seccion/instructivo`
       : null;

@@ -212,8 +212,8 @@ export class OpcionReinscripcionService {
    * Formatear respuesta
    */
   private formatResponse(opcion: OpcionReinscripcion): OpcionReinscripcionResponse {
-    // Construir URL completa para descarga
-    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+    // Construir URL para descarga (relativa o con API_URL configurado)
+    const baseUrl = process.env.API_URL ? process.env.API_URL.replace(/\/$/, '') : '';
     const archivoUrl = `${baseUrl}/api/opciones-reinscripcion/${opcion.id}/download`;
 
     return {
