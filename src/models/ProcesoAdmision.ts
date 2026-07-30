@@ -8,6 +8,7 @@ export class ProcesoAdmision extends Model {
   public titulo!: string;
   public subtitulo!: string;
   public archivoPath!: string;
+  public convocatoriaPath!: string | null;
   public tipo!: string;
 
   // timestamps!
@@ -33,6 +34,10 @@ ProcesoAdmision.init(
     archivoPath: {
       type: new DataTypes.STRING(255),
       allowNull: false,
+    },
+    convocatoriaPath: {
+      type: new DataTypes.STRING(255),
+      allowNull: true,
     },
     tipo: {
       type: new DataTypes.STRING(50),

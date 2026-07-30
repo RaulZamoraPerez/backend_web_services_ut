@@ -26,12 +26,14 @@ export class ServiciosEscolaresController {
           pasos = [];
         }
       }
-      const attachment = (req.files as any).attachment as fileUpload.UploadedFile;
+      const attachment = (req.files as any)?.attachment as fileUpload.UploadedFile;
+      const convocatoriaAttachment = (req.files as any)?.convocatoriaAttachment as fileUpload.UploadedFile | undefined;
 
       const resultado = await this.procesoAdmisionService.create({
         titulo,
         subtitulo,
         attachment,
+        convocatoriaAttachment,
         pasos
       });
 
@@ -67,7 +69,12 @@ export class ServiciosEscolaresController {
           nombre: data.archivoNombre,
           mimeType: data.archivoMimeType,
           base64: data.archivoBuffer.toString('base64')
-        }
+        },
+        convocatoriaArchivo: data.convocatoriaArchivoBuffer && data.convocatoriaArchivoBuffer.length > 0 ? {
+          nombre: data.convocatoriaArchivoNombre,
+          mimeType: data.convocatoriaArchivoMimeType,
+          base64: data.convocatoriaArchivoBuffer.toString('base64')
+        } : null
       }));
 
       return res.status(200).json(responseArray);
@@ -114,11 +121,13 @@ export class ServiciosEscolaresController {
         }
       }
       const attachment = (req.files as any)?.attachment as fileUpload.UploadedFile | undefined;
+      const convocatoriaAttachment = (req.files as any)?.convocatoriaAttachment as fileUpload.UploadedFile | undefined;
 
       const resultado = await this.procesoAdmisionService.update(id, {
         titulo,
         subtitulo,
         attachment,
+        convocatoriaAttachment,
         pasos
       });
 

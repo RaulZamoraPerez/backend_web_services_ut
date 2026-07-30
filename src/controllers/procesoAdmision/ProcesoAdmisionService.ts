@@ -16,6 +16,7 @@ interface ProcesoAdmisionData {
   titulo: string;
   subtitulo: string;
   attachment?: UploadedFile;
+  convocatoriaAttachment?: UploadedFile;
   pasos?: PasoData[];
 }
 
@@ -24,6 +25,7 @@ interface ProcesoAdmisionResponse {
   titulo: string;
   subtitulo: string;
   archivoPath: string;
+  convocatoriaPath?: string | null;
   createdAt: Date;
   pasos?: any[];
 }
@@ -102,7 +104,7 @@ export class ProcesoAdmisionService {
    * Elimina el registro existente (si hay) antes de crear uno nuevo
    */
   async create(data: ProcesoAdmisionData, tipo: string = 'GENERAL'): Promise<ProcesoAdmisionResponse> {
-    const { titulo, subtitulo, attachment, pasos } = data;
+    const { titulo, subtitulo, attachment, convocatoriaAttachment, pasos } = data;
 
     // Validar que el campo attachment exista
     if (!attachment) {
@@ -112,15 +114,23 @@ export class ProcesoAdmisionService {
     try {
       // 2. Validar tipo de archivo
       this.validateFileType(attachment);
+      if (convocatoriaAttachment) {
+        this.validateFileType(convocatoriaAttachment);
+      }
 
-      // 3. Guardar archivo en uploads/ProcesoAdmision
+      // 3. Guardar archivos en uploads/ProcesoAdmision
       const archivoPath = await this.saveFile(attachment);
+      let convocatoriaPath: string | null = null;
+      if (convocatoriaAttachment) {
+        convocatoriaPath = await this.saveFile(convocatoriaAttachment);
+      }
 
       // 4. Guardar en la base de datos
       const registro = await ProcesoAdmision.create({
         titulo,
         subtitulo,
         archivoPath,
+        convocatoriaPath,
         tipo
       });
       // Guardar pasos si los hay
@@ -139,12 +149,16 @@ export class ProcesoAdmisionService {
 
       // 5. Limpiar archivo temporal
       this.cleanupTempFile(attachment);
+      if (convocatoriaAttachment) {
+        this.cleanupTempFile(convocatoriaAttachment);
+      }
 
       return {
         id: registro.id,
         titulo: registro.titulo,
         subtitulo: registro.subtitulo,
         archivoPath: registro.archivoPath,
+        convocatoriaPath: registro.convocatoriaPath,
         createdAt: registro.createdAt,
         pasos: pasosCreados
       };
@@ -152,6 +166,9 @@ export class ProcesoAdmisionService {
     } catch (error) {
       // Limpiar archivo temporal en caso de error
       this.cleanupTempFile(attachment);
+      if (convocatoriaAttachment) {
+        this.cleanupTempFile(convocatoriaAttachment);
+      }
 
       // Re-lanzar si es CustomError
       if (error instanceof CustomError) {
@@ -176,6 +193,9 @@ export class ProcesoAdmisionService {
     archivoBuffer: Buffer;
     archivoMimeType: string;
     archivoNombre: string;
+    convocatoriaArchivoBuffer?: Buffer;
+    convocatoriaArchivoMimeType?: string;
+    convocatoriaArchivoNombre?: string;
     pasos: any[];
   }>> {
     // Buscar todos los registros con sus pasos
@@ -213,6 +233,21 @@ export class ProcesoAdmisionService {
       // Obtener el nombre del archivo
       const archivoNombre = path.basename(registro.archivoPath);
 
+      // Leer el archivo de convocatoria si existe
+      let convocatoriaArchivoBuffer: Buffer | undefined;
+      let convocatoriaArchivoMimeType: string | undefined;
+      let convocatoriaArchivoNombre: string | undefined;
+
+      if (registro.convocatoriaPath) {
+        const convExt = path.extname(registro.convocatoriaPath).toLowerCase();
+        convocatoriaArchivoMimeType = mimeTypes[convExt] || 'application/octet-stream';
+        const convFullPath = path.join(process.cwd(), registro.convocatoriaPath);
+        if (fs.existsSync(convFullPath)) {
+          convocatoriaArchivoBuffer = fs.readFileSync(convFullPath);
+        }
+        convocatoriaArchivoNombre = path.basename(registro.convocatoriaPath);
+      }
+
       // Obtener los pasos asociados si los hay
       let pasosOrdenados = [];
       if ((registro as any).pasos) {
@@ -226,6 +261,9 @@ export class ProcesoAdmisionService {
         archivoBuffer,
         archivoMimeType,
         archivoNombre,
+        convocatoriaArchivoBuffer,
+        convocatoriaArchivoMimeType,
+        convocatoriaArchivoNombre,
         pasos: pasosOrdenados
       });
     }
@@ -249,6 +287,12 @@ export class ProcesoAdmisionService {
     if (fs.existsSync(archivoAbsolutePath)) {
       fs.unlinkSync(archivoAbsolutePath);
     }
+    if (registro.convocatoriaPath) {
+      const convAbsolutePath = path.join(process.cwd(), registro.convocatoriaPath);
+      if (fs.existsSync(convAbsolutePath)) {
+        fs.unlinkSync(convAbsolutePath);
+      }
+    }
 
     // Eliminar el registro de la base de datos
     await registro.destroy();
@@ -263,9 +307,10 @@ export class ProcesoAdmisionService {
     titulo?: string;
     subtitulo?: string;
     attachment?: UploadedFile;
+    convocatoriaAttachment?: UploadedFile;
     pasos?: PasoData[];
   }): Promise<ProcesoAdmisionResponse> {
-    const { titulo, subtitulo, attachment, pasos } = data;
+    const { titulo, subtitulo, attachment, convocatoriaAttachment, pasos } = data;
 
     // Buscar el registro
     const registro = await ProcesoAdmision.findByPk(id);
@@ -279,23 +324,36 @@ export class ProcesoAdmisionService {
       if (titulo) registro.titulo = titulo;
       if (subtitulo) registro.subtitulo = subtitulo;
 
-      // Si viene un nuevo archivo, validar, guardar y eliminar el anterior
+      // Si viene un nuevo archivo principal, validar, guardar y eliminar el anterior
       if (attachment) {
-        // Validar tipo de archivo
         this.validateFileType(attachment);
 
-        // Eliminar archivo anterior
         const archivoAnteriorPath = path.join(process.cwd(), registro.archivoPath);
         if (fs.existsSync(archivoAnteriorPath)) {
           fs.unlinkSync(archivoAnteriorPath);
         }
 
-        // Guardar nuevo archivo
         const nuevoArchivoPath = await this.saveFile(attachment);
         registro.archivoPath = nuevoArchivoPath;
 
-        // Limpiar archivo temporal
         this.cleanupTempFile(attachment);
+      }
+
+      // Si viene un nuevo archivo de convocatoria oficial, validar, guardar y eliminar el anterior
+      if (convocatoriaAttachment) {
+        this.validateFileType(convocatoriaAttachment);
+
+        if (registro.convocatoriaPath) {
+          const convAnteriorPath = path.join(process.cwd(), registro.convocatoriaPath);
+          if (fs.existsSync(convAnteriorPath)) {
+            fs.unlinkSync(convAnteriorPath);
+          }
+        }
+
+        const nuevaConvocatoriaPath = await this.saveFile(convocatoriaAttachment);
+        registro.convocatoriaPath = nuevaConvocatoriaPath;
+
+        this.cleanupTempFile(convocatoriaAttachment);
       }
 
       // Guardar cambios en la base de datos principal
@@ -304,10 +362,8 @@ export class ProcesoAdmisionService {
       // Procesar pasos si vienen en la petición
       let pasosCreados: any[] = [];
       if (pasos !== undefined) {
-        // Borrar los pasos anteriores
         await PasoAdmision.destroy({ where: { procesoAdmisionId: registro.id } });
 
-        // Crear los nuevos
         if (Array.isArray(pasos) && pasos.length > 0) {
           const pasosToCreate = pasos.map((p, index) => ({
             procesoAdmisionId: registro.id,
@@ -320,7 +376,6 @@ export class ProcesoAdmisionService {
           pasosCreados = await PasoAdmision.bulkCreate(pasosToCreate);
         }
       } else {
-        // Si no vienen pasos, cargamos los que ya tiene
         pasosCreados = await PasoAdmision.findAll({ 
           where: { procesoAdmisionId: registro.id },
           order: [['orden', 'ASC']]
@@ -332,22 +387,23 @@ export class ProcesoAdmisionService {
         titulo: registro.titulo,
         subtitulo: registro.subtitulo,
         archivoPath: registro.archivoPath,
+        convocatoriaPath: registro.convocatoriaPath,
         createdAt: registro.createdAt,
         pasos: pasosCreados
       };
 
     } catch (error) {
-      // Limpiar archivo temporal en caso de error
       if (attachment) {
         this.cleanupTempFile(attachment);
       }
+      if (convocatoriaAttachment) {
+        this.cleanupTempFile(convocatoriaAttachment);
+      }
 
-      // Re-lanzar si es CustomError
       if (error instanceof CustomError) {
         throw error;
       }
 
-      // Error genérico
       console.error("Error en ProcesoAdmisionService.update:", error);
       throw CustomError.internalServer(
         `Error al actualizar el registro: ${error instanceof Error ? error.message : "Error desconocido"}`

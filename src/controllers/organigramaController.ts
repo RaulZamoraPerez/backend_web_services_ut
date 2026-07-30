@@ -8,6 +8,7 @@ import path from "path";
 const buildTree = (items: any[], parentId: number | null = null): any[] => {
   return items
     .filter(item => item.parent_id === parentId)
+    .sort((a, b) => (a.order_position || 0) - (b.order_position || 0))
     .map(item => ({
       id: item.id,  // ¡CRÍTICO! Sin esto, el frontend no puede editar/eliminar
       key: item.key,
@@ -20,12 +21,7 @@ const buildTree = (items: any[], parentId: number | null = null): any[] => {
         text: item.text
       },
       children: buildTree(items, item.id)
-    }))
-    .sort((a, b) => {
-      const aItem = items.find(i => i.data?.name === a.data.name);
-      const bItem = items.find(i => i.data?.name === b.data.name);
-      return (aItem?.order_position || 0) - (bItem?.order_position || 0);
-    });
+    }));
 };
 
 export const getAllOrganigrama = async (req: Request, res: Response, next: NextFunction) => {
