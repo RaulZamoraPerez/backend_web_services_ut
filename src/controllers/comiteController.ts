@@ -31,7 +31,8 @@ export const getComites = async (req: Request, res: Response) => {
             order: [
                 ['id', 'ASC'],
                 [{ model: ComiteCategory, as: 'categorias' }, 'orden', 'ASC'],
-                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'DESC']
+                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'ASC'],
+                [{ model: ComiteCategory, as: 'categorias' }, { model: DocumentoComite, as: 'documentos' }, 'id', 'ASC']
             ]
         });
 
@@ -66,7 +67,8 @@ export const getComiteBySlug = async (req: Request, res: Response) => {
             }],
             order: [
                 [{ model: ComiteCategory, as: 'categorias' }, 'orden', 'ASC'],
-                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'DESC']
+                [{ model: ComiteCategory, as: 'categorias' }, 'id', 'ASC'],
+                [{ model: ComiteCategory, as: 'categorias' }, { model: DocumentoComite, as: 'documentos' }, 'id', 'ASC']
             ]
         });
 
