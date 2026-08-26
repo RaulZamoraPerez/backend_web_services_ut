@@ -7,6 +7,7 @@ interface HeroSlideAttributes {
   tipo: 'imagen' | 'video';
   archivo: string;
   archivo_movil?: string;
+  enlace?: string | null;
   orden: number;
   activo: boolean;
   color_fondo?: string;
@@ -20,6 +21,7 @@ class HeroSlide extends Model<HeroSlideAttributes> implements HeroSlideAttribute
   public tipo!: 'imagen' | 'video';
   public archivo!: string;
   public archivo_movil?: string;
+  public enlace?: string | null;
   public orden!: number;
   public activo!: boolean;
   public color_fondo!: string;
@@ -48,6 +50,10 @@ HeroSlide.init(
       allowNull: false,
     },
     archivo_movil: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    enlace: {
       type: DataTypes.STRING(500),
       allowNull: true,
     },

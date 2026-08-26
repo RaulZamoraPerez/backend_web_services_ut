@@ -23,7 +23,7 @@ export const getConfig = async (req: Request, res: Response) => {
 
 export const updateConfig = async (req: Request, res: Response) => {
   try {
-    const { activo } = req.body;
+    const { activo, remove_pdf, enlace_url, remove_enlace_url } = req.body;
     let config = await ModalInicialConfig.findOne({ where: { id: 1 } });
 
     if (!config) {
@@ -32,6 +32,7 @@ export const updateConfig = async (req: Request, res: Response) => {
         activo: activo === 'true' || activo === true,
         imagen: '',
         enlace_pdf: null,
+        enlace_url: null,
       });
     }
 
@@ -53,6 +54,19 @@ export const updateConfig = async (req: Request, res: Response) => {
         deleteFile(oldPdfPath);
       }
       updateData.enlace_pdf = files['pdf'][0].filename;
+    } else if (remove_pdf === 'true' || remove_pdf === true) {
+      if (config.enlace_pdf && config.enlace_pdf.trim() !== '') {
+        const oldPdfPath = path.join('uploads/noticias', config.enlace_pdf);
+        deleteFile(oldPdfPath);
+      }
+      updateData.enlace_pdf = null;
+    }
+
+    if (enlace_url !== undefined) {
+      updateData.enlace_url = enlace_url ? enlace_url.trim() : null;
+    }
+    if (remove_enlace_url === 'true' || remove_enlace_url === true) {
+      updateData.enlace_url = null;
     }
 
     await config.update(updateData);

@@ -21,7 +21,7 @@ export const getHeroSlides = async (req: Request, res: Response) => {
 
 export const createHeroSlide = async (req: Request, res: Response) => {
   try {
-    const { titulo, tipo, color_fondo } = req.body;
+    const { titulo, tipo, color_fondo, enlace } = req.body;
     const archivo = (req as any).savedHeroFile;
     const archivo_movil = (req as any).savedHeroMobileFile;
 
@@ -34,6 +34,7 @@ export const createHeroSlide = async (req: Request, res: Response) => {
       tipo,
       archivo,
       archivo_movil: archivo_movil || null,
+      enlace: enlace || null,
       orden: 0,
       activo: true,
       color_fondo: color_fondo || '#ffffff',
@@ -49,7 +50,7 @@ export const createHeroSlide = async (req: Request, res: Response) => {
 export const updateHeroSlide = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { titulo, tipo, orden, activo, color_fondo, remove_archivo_movil } = req.body;
+    const { titulo, tipo, orden, activo, color_fondo, enlace, remove_archivo_movil } = req.body;
     const archivo = (req as any).savedHeroFile;
     const archivo_movil = (req as any).savedHeroMobileFile;
 
@@ -63,6 +64,7 @@ export const updateHeroSlide = async (req: Request, res: Response) => {
 
     const updateData: any = { titulo, tipo, orden, activo };
     if (color_fondo !== undefined) updateData.color_fondo = color_fondo;
+    if (enlace !== undefined) updateData.enlace = enlace ? enlace.trim() : null;
     if (archivo) {
       // Eliminar archivo principal anterior
       if (slide.archivo) {

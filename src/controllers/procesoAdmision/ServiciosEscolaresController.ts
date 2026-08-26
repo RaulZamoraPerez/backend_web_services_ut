@@ -111,7 +111,7 @@ export class ServiciosEscolaresController {
   updateProcesoAdmision = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { titulo, subtitulo } = req.body;
+      const { titulo, subtitulo, removeConvocatoriaPdf, removeArchivo } = req.body;
       let pasos;
       if (req.body.pasos) {
         try {
@@ -128,6 +128,8 @@ export class ServiciosEscolaresController {
         subtitulo,
         attachment,
         convocatoriaAttachment,
+        removeConvocatoriaPdf: removeConvocatoriaPdf === 'true' || removeConvocatoriaPdf === true,
+        removeArchivo: removeArchivo === 'true' || removeArchivo === true,
         pasos
       });
 

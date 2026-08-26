@@ -6,6 +6,7 @@ interface ModalInicialConfigAttributes {
   activo: boolean;
   imagen: string;
   enlace_pdf: string | null;
+  enlace_url?: string | null;
 }
 
 class ModalInicialConfig extends Model<ModalInicialConfigAttributes> implements ModalInicialConfigAttributes {
@@ -13,6 +14,7 @@ class ModalInicialConfig extends Model<ModalInicialConfigAttributes> implements 
   public activo!: boolean;
   public imagen!: string;
   public enlace_pdf!: string | null;
+  public enlace_url?: string | null;
 }
 
 ModalInicialConfig.init(
@@ -32,6 +34,10 @@ ModalInicialConfig.init(
       allowNull: true,
     },
     enlace_pdf: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    enlace_url: {
       type: DataTypes.STRING(500),
       allowNull: true,
     },

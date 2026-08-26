@@ -106,20 +106,20 @@ export class ProcesoAdmisionService {
   async create(data: ProcesoAdmisionData, tipo: string = 'GENERAL'): Promise<ProcesoAdmisionResponse> {
     const { titulo, subtitulo, attachment, convocatoriaAttachment, pasos } = data;
 
-    // Validar que el campo attachment exista
-    if (!attachment) {
-      throw CustomError.badRequest("El campo 'attachment' es requerido.");
-    }
-
     try {
-      // 2. Validar tipo de archivo
-      this.validateFileType(attachment);
+      // 2. Validar tipo de archivo si vienen
+      if (attachment) {
+        this.validateFileType(attachment);
+      }
       if (convocatoriaAttachment) {
         this.validateFileType(convocatoriaAttachment);
       }
 
-      // 3. Guardar archivos en uploads/ProcesoAdmision
-      const archivoPath = await this.saveFile(attachment);
+      // 3. Guardar archivos en uploads/ProcesoAdmision si vienen
+      let archivoPath = '';
+      if (attachment) {
+        archivoPath = await this.saveFile(attachment);
+      }
       let convocatoriaPath: string | null = null;
       if (convocatoriaAttachment) {
         convocatoriaPath = await this.saveFile(convocatoriaAttachment);
@@ -147,8 +147,10 @@ export class ProcesoAdmisionService {
         pasosCreados = await PasoAdmision.bulkCreate(pasosToCreate);
       }
 
-      // 5. Limpiar archivo temporal
-      this.cleanupTempFile(attachment);
+      // 5. Limpiar archivo temporal si vinieron
+      if (attachment) {
+        this.cleanupTempFile(attachment);
+      }
       if (convocatoriaAttachment) {
         this.cleanupTempFile(convocatoriaAttachment);
       }
@@ -165,7 +167,9 @@ export class ProcesoAdmisionService {
 
     } catch (error) {
       // Limpiar archivo temporal en caso de error
-      this.cleanupTempFile(attachment);
+      if (attachment) {
+        this.cleanupTempFile(attachment);
+      }
       if (convocatoriaAttachment) {
         this.cleanupTempFile(convocatoriaAttachment);
       }
@@ -308,9 +312,11 @@ export class ProcesoAdmisionService {
     subtitulo?: string;
     attachment?: UploadedFile;
     convocatoriaAttachment?: UploadedFile;
+    removeConvocatoriaPdf?: boolean;
+    removeArchivo?: boolean;
     pasos?: PasoData[];
   }): Promise<ProcesoAdmisionResponse> {
-    const { titulo, subtitulo, attachment, convocatoriaAttachment, pasos } = data;
+    const { titulo, subtitulo, attachment, convocatoriaAttachment, removeConvocatoriaPdf, removeArchivo, pasos } = data;
 
     // Buscar el registro
     const registro = await ProcesoAdmision.findByPk(id);
@@ -322,21 +328,45 @@ export class ProcesoAdmisionService {
     try {
       // Actualizar campos de texto si vienen
       if (titulo) registro.titulo = titulo;
-      if (subtitulo) registro.subtitulo = subtitulo;
+      if (subtitulo !== undefined) registro.subtitulo = subtitulo;
+
+      // Si viene orden de remoción de archivo principal
+      if (removeArchivo) {
+        if (registro.archivoPath) {
+          const archivoAnteriorPath = path.join(process.cwd(), registro.archivoPath);
+          if (fs.existsSync(archivoAnteriorPath)) {
+            fs.unlinkSync(archivoAnteriorPath);
+          }
+        }
+        registro.archivoPath = '';
+      }
 
       // Si viene un nuevo archivo principal, validar, guardar y eliminar el anterior
       if (attachment) {
         this.validateFileType(attachment);
 
-        const archivoAnteriorPath = path.join(process.cwd(), registro.archivoPath);
-        if (fs.existsSync(archivoAnteriorPath)) {
-          fs.unlinkSync(archivoAnteriorPath);
+        if (registro.archivoPath) {
+          const archivoAnteriorPath = path.join(process.cwd(), registro.archivoPath);
+          if (fs.existsSync(archivoAnteriorPath)) {
+            fs.unlinkSync(archivoAnteriorPath);
+          }
         }
 
         const nuevoArchivoPath = await this.saveFile(attachment);
         registro.archivoPath = nuevoArchivoPath;
 
         this.cleanupTempFile(attachment);
+      }
+
+      // Si viene orden de remoción de PDF de convocatoria
+      if (removeConvocatoriaPdf) {
+        if (registro.convocatoriaPath) {
+          const convAnteriorPath = path.join(process.cwd(), registro.convocatoriaPath);
+          if (fs.existsSync(convAnteriorPath)) {
+            fs.unlinkSync(convAnteriorPath);
+          }
+        }
+        registro.convocatoriaPath = null;
       }
 
       // Si viene un nuevo archivo de convocatoria oficial, validar, guardar y eliminar el anterior
