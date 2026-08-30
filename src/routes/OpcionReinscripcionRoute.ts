@@ -13,8 +13,15 @@ const controller = new OpcionReinscripcionController();
  */
 const validateFileUpload = (req: Request, res: Response, next: NextFunction) => {
   const files = req.files as any;
+  const isEditing = !!req.body.id;
 
+  // Si no se adjuntó archivo:
   if (!files || !files.archivo) {
+    if (isEditing) {
+      // En modo edición se permite no enviar archivo para conservar el actual
+      next();
+      return;
+    }
     res.status(400).json({
       error: "El archivo PDF es requerido."
     });

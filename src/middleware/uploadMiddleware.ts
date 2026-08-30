@@ -1509,3 +1509,96 @@ export const savePatrocinadorFile = (req: Request, res: Response, next: NextFunc
     });
   }
 };
+
+// ============================================
+// CONFIGURACIÓN PARA PUBLICACIONES UTTECAM (LIBROS)
+// ============================================
+const publicacionesStorage = multer.memoryStorage();
+
+const _uploadPublicacionesMulter = multer({
+  storage: publicacionesStorage,
+  limits: {
+    fileSize: 150 * 1024 * 1024, // 150MB para archivos PDF grandes y portadas
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'application/pdf'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no permitido. Se requieren imágenes para portada o PDF para el libro.'));
+    }
+  }
+}).fields([
+  { name: 'portada', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
+]);
+
+export const uploadPublicacionesUttecam = (req: Request, res: Response, next: NextFunction) => {
+  _uploadPublicacionesMulter(req, res, function (err: any) {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'El archivo supera el tamaño máximo permitido (150MB)' });
+      }
+      return res.status(400).json({ error: `Error en la subida: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+};
+
+export const savePublicacionesFiles = (req: Request, res: Response, next: NextFunction) => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  if (!files) {
+    return next();
+  }
+
+  try {
+    // Guardar portada
+    if (files.portada && files.portada[0]) {
+      const uploadPath = path.join(__dirname, '../../uploads/publicaciones/portadas');
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      const randomName = crypto.randomBytes(16).toString('hex');
+      const timestamp = Date.now();
+      const originalExt = path.extname(files.portada[0].originalname).toLowerCase();
+      const filename = `portada_${timestamp}_${randomName}${originalExt}`;
+      const filePath = path.join(uploadPath, filename);
+
+      fs.writeFileSync(filePath, files.portada[0].buffer);
+      (req as any).savedPortadaPath = `/uploads/publicaciones/portadas/${filename}`;
+    }
+
+    // Guardar PDF
+    if (files.pdf && files.pdf[0]) {
+      const uploadPath = path.join(__dirname, '../../uploads/publicaciones/pdfs');
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      const randomName = crypto.randomBytes(16).toString('hex');
+      const timestamp = Date.now();
+      const originalExt = path.extname(files.pdf[0].originalname).toLowerCase() || '.pdf';
+      const filename = `libro_${timestamp}_${randomName}${originalExt}`;
+      const filePath = path.join(uploadPath, filename);
+
+      fs.writeFileSync(filePath, files.pdf[0].buffer);
+      (req as any).savedPdfPath = `/uploads/publicaciones/pdfs/${filename}`;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Error guardando archivos de publicación:', error);
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudieron guardar los archivos de la publicación'
+    });
+  }
+};
+

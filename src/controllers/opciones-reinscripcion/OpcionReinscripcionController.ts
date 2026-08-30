@@ -19,30 +19,33 @@ export class OpcionReinscripcionController {
       const id = req.body.id || undefined;
       const { titulo, subtitulo, activo } = req.body;
 
-      // El archivo ya fue validado por el middleware validateFileUpload
+      let relativePath: string | undefined = undefined;
+
       const files = req.files as any;
-      const archivo = files.archivo as UploadedFile;
+      if (files && files.archivo) {
+        const archivo = files.archivo as UploadedFile;
 
-      // Crear directorio si no existe
-      const uploadPath = path.join(process.cwd(), UPLOAD_DIR);
-      if (!fs.existsSync(uploadPath)) {
-        fs.mkdirSync(uploadPath, { recursive: true });
+        // Crear directorio si no existe
+        const uploadPath = path.join(process.cwd(), UPLOAD_DIR);
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        // Generar nombre único para el archivo
+        const timestamp = Date.now();
+        const ext = path.extname(archivo.name);
+        const baseName = path.basename(archivo.name, ext)
+          .replace(/[^a-zA-Z0-9]/g, '_')
+          .substring(0, 50);
+        const fileName = `${baseName}_${timestamp}${ext}`;
+        const filePath = path.join(uploadPath, fileName);
+
+        // Guardar archivo
+        await archivo.mv(filePath);
+
+        // Ruta relativa para guardar en BD
+        relativePath = `${UPLOAD_DIR}/${fileName}`;
       }
-
-      // Generar nombre único para el archivo
-      const timestamp = Date.now();
-      const ext = path.extname(archivo.name);
-      const baseName = path.basename(archivo.name, ext)
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .substring(0, 50);
-      const fileName = `${baseName}_${timestamp}${ext}`;
-      const filePath = path.join(uploadPath, fileName);
-
-      // Guardar archivo
-      await archivo.mv(filePath);
-
-      // Ruta relativa para guardar en BD
-      const relativePath = `${UPLOAD_DIR}/${fileName}`;
 
       // Crear o actualizar en BD
       const result = await opcionReinscripcionService.createOrUpdate(id, {

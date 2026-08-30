@@ -125,6 +125,7 @@ import SeminarioCafeBanner from '../models/SeminarioCafeBanner';
 import EgresadosBanner from '../models/EgresadosBanner';
 import EgresadosInfo from '../models/EgresadosInfo';
 import EntidadCertificacionInfo from '../models/EntidadCertificacionInfo';
+import PublicacionUttecam from '../models/PublicacionUttecam';
 import SiteConfig from '../models/SiteConfig';
 
 export const syncDatabase = async (force: boolean = false): Promise<void> => {
@@ -249,6 +250,7 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     Patrocinador,
     CarreraConfig,
     NoticiaConfig,
+    PublicacionUttecam,
     SitemapCategory,
     SiteConfig,
   ];

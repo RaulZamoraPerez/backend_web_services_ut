@@ -21,6 +21,8 @@ export const ensureUploadFolders = (): void => {
         'hero-slides',
         'nosotros',
         'biblioteca',
+        'publicaciones/portadas',
+        'publicaciones/pdfs',
         'tmp'
     ];
 

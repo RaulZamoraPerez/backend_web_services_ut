@@ -71,6 +71,7 @@ import servicioTecnologicoBannerRouter from './routes/servicioTecnologicoBannerR
 import miembrosSniiBannerRouter from './routes/miembrosSniiBannerRoutes';
 import repositorioDigitalBannerRouter from './routes/repositorioDigitalBannerRoutes';
 import seminarioCafeBannerRouter from './routes/seminarioCafeBannerRoutes';
+import publicacionUttecamRouter from './routes/publicacionUttecamRoutes';
 import siteConfigRouter from './routes/siteConfigRoutes';
 
 // Ruta temporal para formularios (puede expandirse luego)
@@ -375,6 +376,7 @@ app.use('/api/modal-inicial', modalInicialRouter);
 app.use('/api/footer', footerRouter);
 app.use('/api/sitemap', sitemapRouter);
 app.use('/api/site-config', siteConfigRouter);
+app.use('/api/publicaciones-uttecam', publicacionUttecamRouter);
 
 app.use('/api/upload', EmailRoute.routes);
 app.use('/api/servicios-escolares', ProcesoAdmisionRoute.routes);

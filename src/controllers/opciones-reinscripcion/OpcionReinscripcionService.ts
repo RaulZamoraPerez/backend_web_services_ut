@@ -6,7 +6,7 @@ import fs from "fs";
 interface OpcionReinscripcionData {
   titulo: string;
   subtitulo?: string;
-  archivoPath: string;
+  archivoPath?: string;
   activo?: boolean;
 }
 
@@ -37,7 +37,8 @@ export class OpcionReinscripcionService {
         throw CustomError.badRequest("El título es requerido.");
       }
 
-      if (!archivoPath || archivoPath.trim() === '') {
+      // Si es una creación nueva, el archivo es obligatorio
+      if (!id && (!archivoPath || archivoPath.trim() === '')) {
         throw CustomError.badRequest("El archivo es requerido.");
       }
 
@@ -49,16 +50,21 @@ export class OpcionReinscripcionService {
           throw CustomError.notFound(`Opción de reinscripción con ID ${id} no encontrada.`);
         }
 
-        // Si hay un nuevo archivo, eliminar el anterior
-        if (archivoPath !== opcion.archivoPath && opcion.archivoPath) {
-          this.deleteFile(opcion.archivoPath);
+        let nuevoArchivoPath = opcion.archivoPath;
+
+        // Si se envió un nuevo archivo y es diferente, eliminar el anterior
+        if (archivoPath && archivoPath !== opcion.archivoPath) {
+          if (opcion.archivoPath) {
+            this.deleteFile(opcion.archivoPath);
+          }
+          nuevoArchivoPath = archivoPath;
         }
 
         // Actualizar
         await opcion.update({
           titulo: titulo.trim(),
           subtitulo: subtitulo ? subtitulo.trim() : null,
-          archivoPath,
+          archivoPath: nuevoArchivoPath,
           activo: activo !== undefined ? activo : opcion.activo
         });
 
@@ -69,7 +75,7 @@ export class OpcionReinscripcionService {
       const nuevaOpcion = await OpcionReinscripcion.create({
         titulo: titulo.trim(),
         subtitulo: subtitulo ? subtitulo.trim() : null,
-        archivoPath,
+        archivoPath: archivoPath!,
         activo: activo !== undefined ? activo : true
       });
 

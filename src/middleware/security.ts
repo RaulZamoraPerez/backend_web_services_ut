@@ -24,8 +24,8 @@ export const securityHeaders = helmet({
   // DNS Prefetch Control
   dnsPrefetchControl: { allow: false },
   
-  // Frameguard - previene clickjacking
-  frameguard: { action: 'deny' },
+  // Frameguard - permitir iframes de la misma aplicación / frontend
+  frameguard: false,
   
   // Hide X-Powered-By header
   hidePoweredBy: true,
