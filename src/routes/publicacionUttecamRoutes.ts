@@ -10,6 +10,8 @@ import {
   incrementarDescarga,
   calificarPublicacion,
   togglePermitirDescarga,
+  getPublicacionesConfig,
+  updatePublicacionesConfig,
 } from '../controllers/publicacionUttecamController';
 import {
   uploadPublicacionesUttecam,
@@ -17,6 +19,10 @@ import {
 } from '../middleware/uploadMiddleware';
 
 const router = Router();
+
+// Configuración de encabezado y textos
+router.get('/config', getPublicacionesConfig);
+router.put('/config', updatePublicacionesConfig);
 
 // Rutas públicas
 router.get('/', getPublicaciones);

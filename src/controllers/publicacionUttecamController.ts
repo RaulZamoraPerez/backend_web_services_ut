@@ -1,8 +1,61 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import PublicacionUttecam from '../models/PublicacionUttecam';
+import PublicacionesConfig from '../models/PublicacionesConfig';
 import { deleteFile } from '../middleware/uploadMiddleware';
 import path from 'path';
+
+/**
+ * Obtener configuración del encabezado (título y descripción)
+ */
+export const getPublicacionesConfig = async (_req: Request, res: Response) => {
+  try {
+    let config = await PublicacionesConfig.findOne();
+    if (!config) {
+      config = await PublicacionesConfig.create({
+        titulo: 'Publicaciones y Libros',
+        descripcion: 'Explora el acervo de libros de texto, manuales especializados, revistas y artículos científicos publicados por la Universidad Tecnológica de Tecamachalco.',
+        activo: true,
+      });
+    }
+    return res.json(config);
+  } catch (error: any) {
+    console.error('Error al obtener configuración de publicaciones:', error);
+    return res.status(500).json({ error: 'Error interno al consultar la configuración' });
+  }
+};
+
+/**
+ * Actualizar configuración del encabezado (título y descripción)
+ */
+export const updatePublicacionesConfig = async (req: Request, res: Response) => {
+  try {
+    const { titulo, descripcion, activo } = req.body;
+
+    let config = await PublicacionesConfig.findOne();
+    if (!config) {
+      config = await PublicacionesConfig.create({
+        titulo: titulo !== undefined ? titulo.trim() : 'Publicaciones y Libros',
+        descripcion: descripcion !== undefined ? descripcion : '',
+        activo: activo !== undefined ? Boolean(activo) : true,
+      });
+    } else {
+      if (titulo !== undefined) config.titulo = titulo.trim();
+      if (descripcion !== undefined) config.descripcion = descripcion;
+      if (activo !== undefined) config.activo = Boolean(activo);
+      await config.save();
+    }
+
+    return res.json({
+      success: true,
+      message: 'Configuración actualizada correctamente',
+      config,
+    });
+  } catch (error: any) {
+    console.error('Error al actualizar configuración de publicaciones:', error);
+    return res.status(500).json({ error: 'Error interno al actualizar la configuración' });
+  }
+};
 
 /**
  * Obtener publicaciones activas para el portal público
@@ -120,10 +173,6 @@ export const createPublicacion = async (req: Request, res: Response) => {
 
     if (!titulo || !titulo.trim()) {
       return res.status(400).json({ error: 'El título es obligatorio' });
-    }
-
-    if (!savedPdfPath) {
-      return res.status(400).json({ error: 'El archivo PDF del libro es obligatorio' });
     }
 
     const nuevaPublicacion = await PublicacionUttecam.create({
@@ -309,10 +358,10 @@ export const incrementarVista = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Publicación no encontrada' });
     }
 
-    await publicacion.increment('vistas', { by: 1 });
-    await publicacion.reload();
+    publicacion.vistas = Number(publicacion.vistas || 0) + 1;
+    await publicacion.save();
 
-    return res.json({ vistas: publicacion.vistas, mensaje: 'Vista registrada' });
+    return res.json({ vistas: publicacion.vistas, mensaje: 'Vista registrada con éxito' });
   } catch (error: any) {
     console.error('Error al incrementar vistas:', error);
     return res.status(500).json({ error: 'Error al registrar vista' });
@@ -338,10 +387,10 @@ export const incrementarDescarga = async (req: Request, res: Response) => {
       });
     }
 
-    await publicacion.increment('descargas', { by: 1 });
-    await publicacion.reload();
+    publicacion.descargas = Number(publicacion.descargas || 0) + 1;
+    await publicacion.save();
 
-    return res.json({ descargas: publicacion.descargas, mensaje: 'Descarga registrada' });
+    return res.json({ descargas: publicacion.descargas, mensaje: 'Descarga registrada con éxito' });
   } catch (error: any) {
     console.error('Error al incrementar descargas:', error);
     return res.status(500).json({ error: 'Error al registrar descarga' });

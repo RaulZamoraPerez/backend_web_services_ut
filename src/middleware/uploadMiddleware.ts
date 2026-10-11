@@ -1602,3 +1602,93 @@ export const savePublicacionesFiles = (req: Request, res: Response, next: NextFu
   }
 };
 
+// ==========================================
+// Configuración para Evidencias de Quejas y Sugerencias
+// ==========================================
+const quejaStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadPath = path.join(__dirname, '../../uploads/quejas-sugerencias');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (_req, file, cb) => {
+    const randomName = crypto.randomBytes(16).toString('hex');
+    const timestamp = Date.now();
+    const originalExt = path.extname(file.originalname).toLowerCase();
+    const filename = `evidencia_${timestamp}_${randomName}${originalExt}`;
+    cb(null, filename);
+  }
+});
+
+const quejaFileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (!allowedMimeTypes.includes(file.mimetype) || !allowedExtensions.includes(ext)) {
+    return cb(new Error('Tipo de archivo no permitido. Solo se admiten archivos PDF o imágenes (JPG, PNG, WEBP).'));
+  }
+
+  cb(null, true);
+};
+
+export const uploadQuejaEvidencia = multer({
+  storage: quejaStorage,
+  fileFilter: quejaFileFilter,
+  limits: {
+    fileSize: 15 * 1024 * 1024 // 15MB límite
+  }
+});
+
+export const handleQuejaUploadError = (err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (err) {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'El archivo excede el tamaño máximo permitido de 15MB.' });
+      }
+      return res.status(400).json({ error: `Error en la subida del archivo: ${err.message}` });
+    }
+    return res.status(400).json({ error: err.message || 'Error al procesar el archivo.' });
+  }
+  next();
+};
+
+// ==========================================
+// Configuración para PDF del Aviso de Privacidad
+// ==========================================
+const quejaAvisoPdfStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadPath = path.join(__dirname, '../../uploads/quejas-sugerencias');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (_req, file, cb) => {
+    const randomName = crypto.randomBytes(16).toString('hex');
+    const timestamp = Date.now();
+    const filename = `aviso_privacidad_${timestamp}_${randomName}.pdf`;
+    cb(null, filename);
+  }
+});
+
+const quejaAvisoPdfFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (file.mimetype !== 'application/pdf' && ext !== '.pdf') {
+    return cb(new Error('Solo se permiten archivos en formato PDF para el Aviso de Privacidad.'));
+  }
+  cb(null, true);
+};
+
+export const uploadQuejaAvisoPdf = multer({
+  storage: quejaAvisoPdfStorage,
+  fileFilter: quejaAvisoPdfFilter,
+  limits: {
+    fileSize: 25 * 1024 * 1024 // 25MB
+  }
+});
+
+
+

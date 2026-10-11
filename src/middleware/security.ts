@@ -91,6 +91,12 @@ export const additionalSecurityHeaders = (req: Request, res: Response, next: Nex
 // Middleware para validar Content-Type en requests con body
 export const validateContentType = (req: Request, res: Response, next: NextFunction) => {
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    const contentLength = req.get('Content-Length');
+    // Si no hay body (Content-Length es 0 o no está definido), permitir la petición
+    if (!contentLength || contentLength === '0') {
+      return next();
+    }
+
     const contentType = req.get('Content-Type');
     
     // Permitir multipart/form-data para uploads
@@ -98,7 +104,7 @@ export const validateContentType = (req: Request, res: Response, next: NextFunct
       return next();
     }
     
-    // Requerir application/json para otros casos
+    // Requerir application/json para otros casos con body
     if (!contentType?.startsWith('application/json')) {
       return res.status(400).json({
         error: 'Content-Type inválido',

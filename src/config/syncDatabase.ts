@@ -127,6 +127,9 @@ import EgresadosInfo from '../models/EgresadosInfo';
 import EntidadCertificacionInfo from '../models/EntidadCertificacionInfo';
 import PublicacionUttecam from '../models/PublicacionUttecam';
 import SiteConfig from '../models/SiteConfig';
+import QuejasConfig from '../models/QuejasConfig';
+import QuejaSugerencia from '../models/QuejaSugerencia';
+import PublicacionesConfig from '../models/PublicacionesConfig';
 
 export const syncDatabase = async (force: boolean = false): Promise<void> => {
   // Probar conexiÃƒÂ³n primero
@@ -253,6 +256,9 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     PublicacionUttecam,
     SitemapCategory,
     SiteConfig,
+    QuejasConfig,
+    QuejaSugerencia,
+    PublicacionesConfig,
   ];
 
   // Sincronizar modelos con la base de datos

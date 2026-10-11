@@ -73,6 +73,7 @@ import repositorioDigitalBannerRouter from './routes/repositorioDigitalBannerRou
 import seminarioCafeBannerRouter from './routes/seminarioCafeBannerRoutes';
 import publicacionUttecamRouter from './routes/publicacionUttecamRoutes';
 import siteConfigRouter from './routes/siteConfigRoutes';
+import quejasRouter from './routes/quejasRoutes';
 
 // Ruta temporal para formularios (puede expandirse luego)
 
@@ -377,6 +378,7 @@ app.use('/api/footer', footerRouter);
 app.use('/api/sitemap', sitemapRouter);
 app.use('/api/site-config', siteConfigRouter);
 app.use('/api/publicaciones-uttecam', publicacionUttecamRouter);
+app.use('/api/quejas-sugerencias', quejasRouter);
 
 app.use('/api/upload', EmailRoute.routes);
 app.use('/api/servicios-escolares', ProcesoAdmisionRoute.routes);

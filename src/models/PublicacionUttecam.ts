@@ -144,7 +144,7 @@ PublicacionUttecam.init(
     },
     pdf: {
       type: DataTypes.STRING(500),
-      allowNull: false,
+      allowNull: true,
     },
     paginas: {
       type: DataTypes.INTEGER,
