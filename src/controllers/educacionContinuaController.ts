@@ -70,11 +70,17 @@ export const getPublicCursos = async (req: Request, res: Response) => {
 
 export const createCurso = async (req: Request, res: Response) => {
   try {
-    const { titulo } = req.body;
+    const { titulo, tipo, youtubeId } = req.body;
     const imagenPath = (req as any).savedImagePath;
 
-    if (!imagenPath) {
-      return res.status(400).json({ message: 'La imagen es requerida' });
+    const isVideo = tipo === 'video' || (Boolean(youtubeId) && !imagenPath);
+
+    if (isVideo && !youtubeId) {
+      return res.status(400).json({ message: 'El enlace o ID de YouTube es requerido para cursos en video' });
+    }
+
+    if (!isVideo && !imagenPath) {
+      return res.status(400).json({ message: 'La imagen es requerida para banners de cursos' });
     }
 
     // Obtener el último orden para agregar al final
@@ -85,7 +91,9 @@ export const createCurso = async (req: Request, res: Response) => {
 
     const newCurso = await EducacionContinuaCurso.create({
       titulo: titulo || 'Sin título',
-      imagen: imagenPath,
+      tipo: isVideo ? 'video' : 'imagen',
+      imagen: imagenPath || null,
+      youtubeId: isVideo ? youtubeId : null,
       orden: newOrder,
       activo: true
     });
@@ -99,7 +107,7 @@ export const createCurso = async (req: Request, res: Response) => {
 export const updateCurso = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { titulo, activo } = req.body;
+    const { titulo, activo, tipo, youtubeId } = req.body;
     const imagenPath = (req as any).savedImagePath;
 
     const curso = await EducacionContinuaCurso.findByPk(id);
@@ -107,15 +115,19 @@ export const updateCurso = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Curso no encontrado' });
     }
 
-    // Si hay nueva imagen, eliminar la anterior
+    // Si hay nueva imagen, eliminar la anterior si existía
     if (imagenPath) {
-      const oldImagePath = path.join(__dirname, '../../uploads', curso.imagen);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath);
+      if (curso.imagen) {
+        const oldImagePath = path.join(__dirname, '../../uploads', curso.imagen);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
       }
       curso.imagen = imagenPath;
     }
 
+    if (tipo !== undefined) curso.tipo = tipo;
+    if (youtubeId !== undefined) curso.youtubeId = youtubeId || null;
     if (titulo !== undefined) curso.titulo = titulo;
     if (activo !== undefined) curso.activo = activo === 'true' || activo === true;
 
@@ -135,10 +147,12 @@ export const deleteCurso = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Curso no encontrado' });
     }
 
-    // Eliminar imagen física
-    const imagePath = path.join(__dirname, '../../uploads', curso.imagen);
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
+    // Eliminar imagen física si existía
+    if (curso.imagen) {
+      const imagePath = path.join(__dirname, '../../uploads', curso.imagen);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
     }
 
     await curso.destroy();
